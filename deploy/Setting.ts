@@ -12,13 +12,15 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
 
   const ncto = await ethers.getContract("NCTO")
   const shop = await ethers.getContract("Shop")
-  const mintCard = await ethers.getContract("MintCard")
-  const synthesisMarket = await ethers.getContract("SynthesisMarket")
+  const swapMarket = await ethers.getContract("SwapMarket")
+  const synthesisMarketV1 = await ethers.getContract("SynthesisMarketV1")
+  const synthesisMarketV2 = await ethers.getContract("SynthesisMarketV2")
+  const synthesisMarketV3 = await ethers.getContract("SynthesisMarketV3")
   const coinWindPool = await ethers.getContract("CoinWindPool")
   const coinWindPoolNFT = await ethers.getContract("CoinWindPoolWithNFT")
   const masterChef = await ethers.getContract("MasterChef")
-  const teamTimeLock = await ethers.getContract("TeamTimeLock")
-  const foundationTimeLock = await ethers.getContract("FoundationTimeLock")
+  // const teamTimeLock = await ethers.getContract("TeamTimeLock")
+  // const foundationTimeLock = await ethers.getContract("FoundationTimeLock")
 
   // timelock
   // await cto.connect(dev).grantRole(await cto.MINT_ROLE(), deployer)
@@ -68,26 +70,49 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   await cardSpec.addCardType(2000, 2001, ethers.utils.formatBytes32String("lv2"))
   await cardSpec.addCardType(2000, 2002, ethers.utils.formatBytes32String("lv3"))
 
-  // set shop permissions
-  await shop.setWaiter(mintCard.address)
-  await shop.setUnitPrice(ethers.utils.parseUnits("1", 18))
-
   // mint card to shop
-  await ncto.grantRole(await ncto.MINT_ROLE(), mintCard.address)
-  await ncto.grantRole(await ncto.UPDATE_TOKEN_URI_ROLE(), mintCard.address)
-
-  let quantity = 5
-  for (let i = 0; i < 18; ++i) {
-    // console.log("mint card to shop, card Id:", i, "quantity:", quantity)
-    await mintCard.safeMint(shop.address, i, quantity)
+  await ncto.grantRole(await ncto.MINT_ROLE(), shop.address)
+  await shop.setUnitPrice(ethers.utils.parseUnits("1", 18))
+  for (let i = 0; i < 15; i++) {
+    await shop.changeBlindBoxCard(i, 5)
   }
 
-  //  set synthesisMarket
-  await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarket.address)
-  await ncto.grantRole(await ncto.UPDATE_TOKEN_URI_ROLE(), synthesisMarket.address)
-  await synthesisMarket.setUnitPrice(ethers.utils.parseUnits("1", 18))
-  await synthesisMarket.setSynthesisCardId(15)
-  await synthesisMarket.addSwapCardList([0, 1, 2, 3, 4])
+  // swapMarket
+  await ncto.grantRole(await ncto.MINT_ROLE(), shop.address)
+  await swapMarket.setUnitPrice(ethers.utils.parseUnits("1", 18))
+  await swapMarket.addSwapCardList(0, [1, 2, 3, 4])
+  await swapMarket.addSwapCardList(1, [0, 2, 3, 4])
+  await swapMarket.addSwapCardList(2, [0, 1, 3, 4])
+  await swapMarket.addSwapCardList(3, [0, 1, 2, 4])
+  await swapMarket.addSwapCardList(4, [0, 1, 2, 3])
+
+  await swapMarket.addSwapCardList(5, [6, 7, 8, 9])
+  await swapMarket.addSwapCardList(6, [5, 7, 8, 9])
+  await swapMarket.addSwapCardList(7, [5, 6, 8, 9])
+  await swapMarket.addSwapCardList(8, [5, 6, 7, 9])
+  await swapMarket.addSwapCardList(9, [5, 6, 7, 8])
+
+  await swapMarket.addSwapCardList(10, [11, 12, 13, 14])
+  await swapMarket.addSwapCardList(11, [10, 12, 13, 14])
+  await swapMarket.addSwapCardList(12, [10, 11, 13, 14])
+  await swapMarket.addSwapCardList(13, [10, 11, 12, 14])
+  await swapMarket.addSwapCardList(14, [10, 11, 12, 13])
+
+  //  set synthesisMarketV1
+  await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV1.address)
+  await synthesisMarketV1.setUnitPrice(ethers.utils.parseUnits("1", 18))
+  await synthesisMarketV1.setSynthesisCardId(15)
+  await synthesisMarketV1.addSwapCardList([0, 1, 2, 3, 4])
+  //  set synthesisMarketV2
+  await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV2.address)
+  await synthesisMarketV2.setUnitPrice(ethers.utils.parseUnits("1", 18))
+  await synthesisMarketV2.setSynthesisCardId(16)
+  await synthesisMarketV2.addSwapCardList([5, 6, 7, 8, 9])
+  //  set synthesisMarketV3
+  await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV3.address)
+  await synthesisMarketV3.setUnitPrice(ethers.utils.parseUnits("1", 18))
+  await synthesisMarketV3.setSynthesisCardId(17)
+  await synthesisMarketV3.addSwapCardList([10, 11, 12, 13, 14])
 
   // coinWind
   await cto.grantRole(await cto.MINT_ROLE(), coinWindPool.address)
@@ -107,13 +132,37 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   await coinWindPoolNFT.add(
     10, // allocPoint
     WBNB,
-    5, //cardId
+    15, //cardId
     true
   )
   await coinWindPoolNFT.add(
     10, // allocPoint
     USDT,
-    5, //cardId
+    15, //cardId
+    true
+  )
+  await coinWindPoolNFT.add(
+    10, // allocPoint
+    WBNB,
+    16, //cardId
+    true
+  )
+  await coinWindPoolNFT.add(
+    10, // allocPoint
+    USDT,
+    16, //cardId
+    true
+  )
+  await coinWindPoolNFT.add(
+    10, // allocPoint
+    WBNB,
+    17, //cardId
+    true
+  )
+  await coinWindPoolNFT.add(
+    10, // allocPoint
+    USDT,
+    17, //cardId
     true
   )
 
@@ -181,21 +230,32 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
         address: cardSpec.address,
         owner: await cardSpec.owner(),
       },
-      "nft miner": {
-        address: mintCard.address,
-        owner: await mintCard.owner(),
-      },
     },
     shop: {
-      "lucky draw": {
+      lottery: {
         address: shop.address,
         owner: await shop.owner(),
         devaddr: await shop.devaddr(),
       },
-      synthesisMarket: {
-        address: synthesisMarket.address,
-        owner: await synthesisMarket.owner(),
-        devaddr: await synthesisMarket.devaddr(),
+      synthesisMarketV1: {
+        address: synthesisMarketV1.address,
+        owner: await synthesisMarketV1.owner(),
+        devaddr: await synthesisMarketV1.devaddr(),
+      },
+      synthesisMarketV2: {
+        address: synthesisMarketV2.address,
+        owner: await synthesisMarketV2.owner(),
+        devaddr: await synthesisMarketV2.devaddr(),
+      },
+      synthesisMarketV3: {
+        address: synthesisMarketV3.address,
+        owner: await synthesisMarketV3.owner(),
+        devaddr: await synthesisMarketV3.devaddr(),
+      },
+      swapMarket: {
+        address: swapMarket.address,
+        owner: await swapMarket.owner(),
+        devaddr: await swapMarket.devaddr(),
       },
     },
     pool: {
@@ -221,4 +281,4 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   }
   console.log(info)
 }
-module.exports.dependencies = ["Shop", "SynthesisMarket", "TimeLock", "CoinWindPoolWithNFT", "CoinWindPool", "MasterChef"]
+module.exports.dependencies = ["Shop", "SynthesisMarket", "SwapMarket", "TimeLock", "CoinWindPoolWithNFT", "CoinWindPool", "MasterChef"]
