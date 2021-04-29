@@ -70,9 +70,12 @@ contract Shop is Ownable, Pausable {
         TransferHelper.safeTransferFrom(address(cto), msg.sender, devaddr, unitPrice);
 
         uint256 tempBlindBoxSupply = blindBoxSupply;
+
+        // gas saving ,avoid heavy use sstore
+        uint256 tempSeedIndex = seedIndex;
         for (uint256 i; i < blindBoxCardNum.length(); ++i) {
             (uint256 cardId, uint256 cardLeft) = blindBoxCardNum.at(i);
-            uint256 target = randomGen(++seedIndex, tempBlindBoxSupply);
+            uint256 target = randomGen(++tempSeedIndex, tempBlindBoxSupply);
             if (target < cardLeft) {
                 blindBoxCardNum.set(cardId, cardLeft.sub(1));
                 blindBoxSupply = blindBoxSupply.sub(1);
@@ -81,6 +84,7 @@ contract Shop is Ownable, Pausable {
             }
             tempBlindBoxSupply = tempBlindBoxSupply.sub(cardLeft);
         }
+        seedIndex = tempSeedIndex;
     }
 
     function randomGen(uint256 seed, uint256 max) internal view returns (uint256 randomNumber) {
