@@ -11,7 +11,7 @@ import "hardhat-deploy-ethers"
 import "hardhat-contract-sizer"
 import "solidity-coverage"
 import { HardhatUserConfig } from "hardhat/types"
-import './tasks/account.js'
+import './tasks/test_faucet.js'
 
 const accounts = {
   mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
