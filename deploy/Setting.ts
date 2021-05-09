@@ -51,6 +51,8 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
 
   // mint card to shop
   await ncto.grantRole(await ncto.MINT_ROLE(), shop.address)
+  await ncto.grantRole(await ncto.UPDATE_TOKEN_URI_ROLE(), deployer)
+  await ncto.setBaseURI(process.env.BASE_URI)
   await shop.setUnitPrice(ethers.utils.parseUnits("1", 18))
 
 
@@ -70,8 +72,6 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   await swapMarket.addSwapCardList(17, [2, 3, 4, 9, 13, 14, 18, 19])
   await swapMarket.addSwapCardList(18, [2, 3, 4, 9, 13, 14, 17, 19])
   await swapMarket.addSwapCardList(19, [2, 3, 4, 9, 13, 14, 17, 18])
-
-
 
   await swapMarket.addSwapCardList(0, [6, 8, 11, 12, 16])
   await swapMarket.addSwapCardList(6, [0, 8, 11, 12, 16])
