@@ -20,7 +20,7 @@
     "test:coverage": "cross-env NODE_OPTIONS=\"--max-old-space-size=2048\" hardhat coverage",
     "test:gas": "cross-env REPORT_GAS=true yarn test",
     "lint": "concurrently \"npm run prettier\" && solhint -c .solhint.json 'contracts/**/*.sol'",
-    "prettier": "prettier --write 'test/**/*.ts' && prettier --write 'contracts/**/*.sol' && prettier --write 'deploy/**/*.ts'"
+    "prettier": "prettier --write 'test/**/*.ts' && prettier --write 'contracts/**/*.sol' && prettier --write 'deploy/**/*.ts' && prettier --write 'tasks/**/*.js'"
   },
   "license": "MIT",
   "devDependencies": {
@@ -53,6 +53,7 @@
     "solidity-coverage": "^0.7.16",
     "ts-node": "^9.1.1",
     "typescript": "^4.2.4",
-    "web3": "^1.3.5"
+    "web3": "^1.3.5",
+    "web3-eth-accounts": "^1.3.5"
   }
 }
