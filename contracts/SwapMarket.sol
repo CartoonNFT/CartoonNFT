@@ -77,21 +77,16 @@ contract SwapMarket is Ownable, Pausable {
     }
 
     // synthesis card
-    function swap(uint256 tokeId) external whenNotPaused returns (uint256 tokenId) {
-        require(msg.sender == tx.origin, 'SwapMarket: Human only');
-        uint256 identity = spec.getTokenIdentity(tokeId);
-        uint256 swapLength = identityToswapLists[identity].length();
-        require(swapLength > 0, 'SwapMarket: no swap list');
+    function swap(uint256 tokeIdSrc, uint256 cardIdDst) external whenNotPaused returns (uint256 tokenId) {
+        uint256 identity = spec.getTokenIdentity(tokeIdSrc);
+        require(dentityToswapLists[identity].contains(cardIdDst), 'SwapMarket: no swap list');
 
         // pay some token to dev
         TransferHelper.safeTransferFrom(address(cto), msg.sender, devaddr, unitPrice);
 
-        nft.burn(tokeId);
+        nft.burn(tokeIdSrc);
 
-        uint256 index = randomGen(++seedIndex, swapLength);
-        uint256 cardId = identityToswapLists[identity].at(index);
-
-        tokenId = nft.mintCard(msg.sender, cardId);
+        tokenId = nft.mintCard(msg.sender, cardIdDst);
     }
 
     function pause() external onlyOwner whenNotPaused {
@@ -100,10 +95,6 @@ contract SwapMarket is Ownable, Pausable {
 
     function unpause() external onlyOwner whenPaused {
         _unpause();
-    }
-
-    function randomGen(uint256 seed, uint256 max) internal view returns (uint256 randomNumber) {
-        return (uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.timestamp, msg.sender, block.difficulty, seed))) % max);
     }
 
     function dev(address _devaddr) public onlyOwner {

@@ -16,8 +16,8 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   const synthesisMarketV1 = await ethers.getContract("SynthesisMarketV1")
   const synthesisMarketV2 = await ethers.getContract("SynthesisMarketV2")
   const synthesisMarketV3 = await ethers.getContract("SynthesisMarketV3")
-  const coinWindPool = await ethers.getContract("CoinWindPool")
-  const coinWindPoolNFT = await ethers.getContract("CoinWindPoolWithNFT")
+  // const coinWindPool = await ethers.getContract("CoinWindPool")
+  const masterChefNFT = await ethers.getContract("MasterChefNFT")
   const masterChef = await ethers.getContract("MasterChef")
 
   // add card types
@@ -54,7 +54,6 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   await ncto.grantRole(await ncto.UPDATE_TOKEN_URI_ROLE(), deployer)
   await ncto.setBaseURI(process.env.BASE_URI)
   await shop.setUnitPrice(ethers.utils.parseUnits("1", 18))
-
 
   for (let i = 0; i < 20; i++) {
     await shop.changeBlindBoxCard(i, 100)
@@ -103,54 +102,33 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   await synthesisMarketV3.addSwapCardList([1, 5, 7, 10, 15])
 
   // coinWind
-  await cto.grantRole(await cto.MINT_ROLE(), coinWindPool.address)
-  await coinWindPool.add(
-    10, // allocPoint
-    WBNB,
-    true
-  )
-  await coinWindPool.add(
-    10, // allocPoint
-    USDT,
-    true
-  )
+  // await cto.grantRole(await cto.MINT_ROLE(), coinWindPool.address)
+  // await coinWindPool.add(
+  //   10, // allocPoint
+  //   WBNB,
+  //   true
+  // )
+  // await coinWindPool.add(
+  //   10, // allocPoint
+  //   USDT,
+  //   true
+  // )
 
   // coinWind nft
-  await cto.grantRole(await cto.MINT_ROLE(), coinWindPoolNFT.address)
-  await coinWindPoolNFT.add(
+  await cto.grantRole(await cto.MINT_ROLE(), masterChefNFT.address)
+  await masterChefNFT.add(
     10, // allocPoint
-    WBNB,
-    15, //cardId
+    20, //cardId
     true
   )
-  await coinWindPoolNFT.add(
-    10, // allocPoint
-    USDT,
-    15, //cardId
+  await masterChefNFT.add(
+    20, // allocPoint
+    21, //cardId
     true
   )
-  await coinWindPoolNFT.add(
-    10, // allocPoint
-    WBNB,
-    16, //cardId
-    true
-  )
-  await coinWindPoolNFT.add(
-    10, // allocPoint
-    USDT,
-    16, //cardId
-    true
-  )
-  await coinWindPoolNFT.add(
-    10, // allocPoint
-    WBNB,
-    17, //cardId
-    true
-  )
-  await coinWindPoolNFT.add(
-    10, // allocPoint
-    USDT,
-    17, //cardId
+  await masterChefNFT.add(
+    30, // allocPoint
+    22, //cardId
     true
   )
 
@@ -247,19 +225,23 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
       },
     },
     pool: {
-      coinWindPool: {
-        address: coinWindPool.address,
-        owner: await coinWindPool.owner(),
-        devaddr: await coinWindPool.devaddr(),
-      },
-      coinWindPoolNFT: {
-        address: coinWindPoolNFT.address,
-        owner: await coinWindPoolNFT.owner(),
-        devaddr: await coinWindPoolNFT.devaddr(),
-      },
+      // coinWindPool: {
+      //   address: coinWindPool.address,
+      //   owner: await coinWindPool.owner(),
+      //   devaddr: await coinWindPool.devaddr(),
+      // },
+      // coinWindPoolNFT: {
+      //   address: coinWindPoolNFT.address,
+      //   owner: await coinWindPoolNFT.owner(),
+      //   devaddr: await coinWindPoolNFT.devaddr(),
+      // },
       masterChef: {
         address: masterChef.address,
         owner: await masterChef.owner(),
+      },
+      masterChefNFT: {
+        address: masterChefNFT.address,
+        owner: await masterChefNFT.owner(),
       },
       swapPair: {
         "cto-usdt": cto_usdt,
@@ -269,4 +251,4 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   }
   console.log(info)
 }
-module.exports.dependencies = ["Shop", "SynthesisMarket", "SwapMarket", "TimeLock", "CoinWindPoolWithNFT", "CoinWindPool", "MasterChef"]
+module.exports.dependencies = ["Shop", "SynthesisMarket", "SwapMarket", "TimeLock", "MasterChefNFT", "MasterChef"]
