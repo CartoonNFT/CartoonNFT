@@ -79,7 +79,7 @@ contract SwapMarket is Ownable, Pausable {
     // synthesis card
     function swap(uint256 tokeIdSrc, uint256 cardIdDst) external whenNotPaused returns (uint256 tokenId) {
         uint256 identity = spec.getTokenIdentity(tokeIdSrc);
-        require(dentityToswapLists[identity].contains(cardIdDst), 'SwapMarket: no swap list');
+        require(identityToswapLists[identity].contains(cardIdDst), 'SwapMarket: no swap list');
 
         // pay some token to dev
         TransferHelper.safeTransferFrom(address(cto), msg.sender, devaddr, unitPrice);
