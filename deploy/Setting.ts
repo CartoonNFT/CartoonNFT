@@ -60,7 +60,7 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   }
 
   // swapMarket
-  await ncto.grantRole(await ncto.MINT_ROLE(), shop.address)
+  await ncto.grantRole(await ncto.MINT_ROLE(), swapMarket.address)
   await swapMarket.setUnitPrice(ethers.utils.parseUnits("1", 18))
   await swapMarket.addSwapCardList(2, [3, 4, 9, 13, 14, 17, 18, 19])
   await swapMarket.addSwapCardList(3, [2, 4, 9, 13, 14, 17, 18, 19])
