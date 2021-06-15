@@ -53,6 +53,7 @@ contract SynthesisMarket is Ownable, Pausable {
         cto = IERC20(_token);
         nft = ERC721Ex(_nft);
         devaddr = _devaddr;
+        assets.push();
     }
 
     function addSwapCardList(uint256[] memory cardIds) public onlyOwner {
@@ -162,6 +163,16 @@ contract SynthesisMarket is Ownable, Pausable {
             (, lockTokenIds[i]) = asset.lockTokenIds.at(i);
         }
         return (asset.owner, asset.isRedemption, asset.convertTokenId, lockTokenIds);
+    }
+
+    function getRedemptionAssetId(address from) external view returns (uint256) {
+        for (uint256 i; i < assetsIndex[from].length(); i++) {
+            uint256 assetId = assetsIndex[from].at(i);
+            CardAsset storage asset = assets[assetId];
+            if(asset.isRedemption == false) {
+                return assetId;
+            }
+        }
     }
 
     function pause() external onlyOwner whenNotPaused {
