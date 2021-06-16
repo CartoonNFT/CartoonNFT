@@ -41,6 +41,8 @@ contract SynthesisMarket is Ownable, Pausable {
     // list for synthesis cardIds
     EnumerableMapper.UintToUintMap private swapCardList;
 
+    uint256 public swapLength;
+
     mapping(address => EnumerableSet.UintSet) private assetsIndex;
 
     constructor(
@@ -61,6 +63,9 @@ contract SynthesisMarket is Ownable, Pausable {
             require(cardIds[i] < spec.getCardTypesLength(), 'card id out of range');
             swapCardList.set(spec.getIdentityFromCardId(cardIds[i]), cardIds[i]);
         }
+    }
+    function setAllowedLength(uint256 length) public onlyOwner {
+        swapLength = length;
     }
 
     function removeSwapCardList(uint256[] memory cardIds) public onlyOwner {
@@ -99,7 +104,7 @@ contract SynthesisMarket is Ownable, Pausable {
 
     // synthesis card
     function synthesis(uint256[] calldata tokeIds) external whenNotPaused returns (uint256 tokenId) {
-        require(tokeIds.length == swapCardList.length(), 'length mismatch');
+        require(tokeIds.length == swapLength, 'length mismatch');
 
         // pay some token to dev
         TransferHelper.safeTransferFrom(address(cto), msg.sender, devaddr, unitPrice);

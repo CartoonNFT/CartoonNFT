@@ -89,16 +89,19 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV1.address)
   await synthesisMarketV1.setUnitPrice(ethers.utils.parseUnits("1", 18))
   await synthesisMarketV1.setSynthesisCardId(20)
+  await synthesisMarketV1.setAllowedLength(5)
   await synthesisMarketV1.addSwapCardList([3, 4, 5, 10, 14, 15, 18, 19, 20])
   //  set synthesisMarketV2
   await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV2.address)
   await synthesisMarketV2.setUnitPrice(ethers.utils.parseUnits("1", 18))
   await synthesisMarketV2.setSynthesisCardId(21)
+  await synthesisMarketV2.setAllowedLength(5)
   await synthesisMarketV2.addSwapCardList([1, 7, 9, 12, 13, 17])
   //  set synthesisMarketV3
   await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV3.address)
   await synthesisMarketV3.setUnitPrice(ethers.utils.parseUnits("1", 18))
   await synthesisMarketV3.setSynthesisCardId(22)
+  await synthesisMarketV3.setAllowedLength(5)
   await synthesisMarketV3.addSwapCardList([2, 6, 8, 11, 16])
 
   // coinWind
