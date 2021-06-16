@@ -43,6 +43,10 @@ contract CardSpec is Ownable {
     CardType[] public cardTypes;
     EnumerableSet.UintSet private skillTypes;
 
+    constructor() {
+        cardTypes.push();
+    }
+
     function addCardType(
         uint16 _skin,
         uint16 _rarity,
