@@ -73,6 +73,8 @@ contract Shop is Ownable, Pausable {
 
         // gas saving ,avoid heavy use sstore
         uint256 tempSeedIndex = seedIndex;
+        // Prevent gas limit attacks
+        require(gasleft() > (blindBoxCardNum.length() * 10000 + 30000), 'not enough gas left');
         for (uint256 i; i < blindBoxCardNum.length(); ++i) {
             (uint256 cardId, uint256 cardLeft) = blindBoxCardNum.at(i);
             uint256 target = randomGen(++tempSeedIndex, tempBlindBoxSupply);
