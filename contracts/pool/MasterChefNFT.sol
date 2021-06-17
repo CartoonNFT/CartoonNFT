@@ -46,9 +46,9 @@ contract MasterChefNFT is Ownable {
     uint256 public totalAllocPoint = 0;
     // The block number when CTO mining starts.
     uint256 public startBlock;
-    event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
-    event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
+    event Deposit(address indexed user, uint256 indexed pid, uint256 tokenId);
+    event Withdraw(address indexed user, uint256 indexed pid, uint256 tokenId);
+    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 tokenId);
 
     constructor(
         CartoonToken _cto,
@@ -175,13 +175,14 @@ contract MasterChefNFT is Ownable {
             uint256 pending = user.tokenIds.length().mul(pool.accCtoPerShare).div(1e12).sub(user.rewardDebt);
             safeCtoTransfer(msg.sender, pending);
         }
+        if (_tokenId > 0) {
+            require(cardSpec.getTokenIdentity(_tokenId) == pool.tokenIdentity, 'token identity mismatch');
+            TransferHelper.safeTransferFrom(address(nCto), msg.sender, address(this), _tokenId);
+            user.tokenIds.add(_tokenId);
 
-        require(cardSpec.getTokenIdentity(_tokenId) == pool.tokenIdentity, 'token identity mismatch');
-        TransferHelper.safeTransferFrom(address(nCto), msg.sender, address(this), _tokenId);
-        user.tokenIds.add(_tokenId);
-
+            pool.tokenAmount = pool.tokenAmount.add(1);
+        }
         user.rewardDebt = user.tokenIds.length().mul(pool.accCtoPerShare).div(1e12);
-        pool.tokenAmount = pool.tokenAmount.add(1);
         emit Deposit(msg.sender, _pid, _tokenId);
     }
 
@@ -189,23 +190,28 @@ contract MasterChefNFT is Ownable {
     function withdraw(uint256 _pid, uint256 _tokenId) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        require(user.tokenIds.contains(_tokenId), 'withdraw: not good');
         updatePool(_pid);
         uint256 pending = user.tokenIds.length().mul(pool.accCtoPerShare).div(1e12).sub(user.rewardDebt);
         safeCtoTransfer(msg.sender, pending);
-        user.tokenIds.remove(_tokenId);
+        if (_tokenId > 0) {
+            require(user.tokenIds.contains(_tokenId), 'withdraw: not good');
+            user.tokenIds.remove(_tokenId);
+            TransferHelper.safeTransferFrom(address(nCto), address(this), msg.sender, _tokenId);
+            pool.tokenAmount = pool.tokenAmount.sub(1);
+        }
         user.rewardDebt = user.tokenIds.length().mul(pool.accCtoPerShare).div(1e12);
-        TransferHelper.safeTransferFrom(address(nCto), address(this), msg.sender, _tokenId);
-        pool.tokenAmount = pool.tokenAmount.sub(1);
         emit Withdraw(msg.sender, _pid, _tokenId);
     }
 
-    function claim(uint256 _pid) public {
+    function emergencyWithdraw(uint256 _pid, uint256 _tokenId) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
-        uint256 pending = user.tokenIds.length().mul(pool.accCtoPerShare).div(1e12).sub(user.rewardDebt);
-        safeCtoTransfer(msg.sender, pending);
+        require(user.tokenIds.contains(_tokenId), 'emergencyWithdraw: not good');
+        user.tokenIds.remove(_tokenId);
+        TransferHelper.safeTransferFrom(address(nCto), address(this), msg.sender, _tokenId);
+        pool.tokenAmount = pool.tokenAmount.sub(1);
+        user.rewardDebt = user.tokenIds.length().mul(pool.accCtoPerShare).div(1e12);
+        emit EmergencyWithdraw(msg.sender, _pid, _tokenId);
     }
 
     // Safe cto transfer function, just in case if rounding error causes pool to not have enough CTOs.

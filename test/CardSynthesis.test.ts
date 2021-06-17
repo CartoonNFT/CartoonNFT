@@ -1,6 +1,7 @@
 import { deployments, ethers, getNamedAccounts } from "hardhat"
 import * as chai from "chai"
 import * as chaiAsPromised from "chai-as-promised"
+import { eventNames } from "process"
 
 chai.should()
 chai.use(chaiAsPromised)
@@ -57,25 +58,25 @@ describe("Card Synthesis Market", function () {
 
   it("should be add swap card list", async function () {
     // role check
-    await this.synthesisMarket.connect(this.bob).addSwapCardList([0, 1, 2, 3, 4]).should.be.rejectedWith("Ownable: caller is not the owner")
+    await this.synthesisMarket.connect(this.bob).addSwapCardList([1, 2, 3, 4, 5]).should.be.rejectedWith("Ownable: caller is not the owner")
     // card range check
-    await this.synthesisMarket.addSwapCardList([0, 1, 2, 3, 7]).should.be.rejectedWith("card id out of range")
-    await this.synthesisMarket.addSwapCardList([0, 1, 2, 3, 4])
+    await this.synthesisMarket.addSwapCardList([1, 2, 3, 4, 7]).should.be.rejectedWith("card id out of range")
+    await this.synthesisMarket.addSwapCardList([1, 2, 3, 4, 5])
 
     expect(await this.synthesisMarket.getSwapCardListLength()).equal(5)
-    expect(await this.synthesisMarket.containSwapCardList(0)).to.be.true
     expect(await this.synthesisMarket.containSwapCardList(1)).to.be.true
     expect(await this.synthesisMarket.containSwapCardList(2)).to.be.true
     expect(await this.synthesisMarket.containSwapCardList(3)).to.be.true
     expect(await this.synthesisMarket.containSwapCardList(4)).to.be.true
+    expect(await this.synthesisMarket.containSwapCardList(5)).to.be.true
     expect(await this.synthesisMarket.containSwapCardList(110)).to.be.false
 
     expect(await this.synthesisMarket.getSwapCardList()).eql([
-      ethers.BigNumber.from(0),
       ethers.BigNumber.from(1),
       ethers.BigNumber.from(2),
       ethers.BigNumber.from(3),
       ethers.BigNumber.from(4),
+      ethers.BigNumber.from(5),
     ])
   })
   it("should be check pause", async function () {
@@ -130,13 +131,14 @@ describe("Card Synthesis", function () {
 
     await this.synthesisMarket.setUnitPrice(ethers.utils.parseUnits("1", 18))
 
-    await this.synthesisMarket.addSwapCardList([0, 1, 2, 3, 4])
-    await this.synthesisMarket.setSynthesisCardId(5)
+    await this.synthesisMarket.addSwapCardList([1, 2, 3, 4, 5])
+    await this.synthesisMarket.setSynthesisCardId(6)
+    await this.synthesisMarket.setAllowedLength(5)
 
     //mint nft to carol
 
     await this.nft.grantRole(await this.nft.MINT_ROLE(), this.alice.address)
-    for (let i = 0; i < 5; i++) {
+    for (let i = 1; i < 6; i++) {
       let card = await this.cardSpec.cardTypes(i)
       let tokenPreId = ethers.BigNumber.from(await this.cardSpec.NFT_SIGN())
         .shl(await this.cardSpec.NFT_SIGN_BIT())
@@ -144,7 +146,7 @@ describe("Card Synthesis", function () {
         .or(ethers.BigNumber.from(card["rarity"]).shl(await this.cardSpec.CARD_RARITY_BIT()))
       await this.nft.mint(this.carol.address, tokenPreId)
     }
-    for (let i = 0; i < 5; i++) {
+    for (let i = 1; i < 6; i++) {
       let card = await this.cardSpec.cardTypes(i)
       let tokenPreId = ethers.BigNumber.from(await this.cardSpec.NFT_SIGN())
         .shl(await this.cardSpec.NFT_SIGN_BIT())
@@ -157,25 +159,23 @@ describe("Card Synthesis", function () {
   })
 
   it("should be remove swap card", async function () {
-    await this.synthesisMarket.connect(this.bob).removeSwapCardList([0, 1]).should.be.rejectedWith("Ownable: caller is not the owner")
-    await this.synthesisMarket.removeSwapCardList([0, 111]).should.be.rejectedWith("card id out of range")
-    await this.synthesisMarket.removeSwapCardList([0, 1])
+    await this.synthesisMarket.connect(this.bob).removeSwapCardList([1, 2]).should.be.rejectedWith("Ownable: caller is not the owner")
+    await this.synthesisMarket.removeSwapCardList([1, 111]).should.be.rejectedWith("card id out of range")
+    await this.synthesisMarket.removeSwapCardList([1, 2])
 
     expect(await this.synthesisMarket.getSwapCardListLength()).equal(3)
-    expect(await this.synthesisMarket.containSwapCardList(0)).to.be.false
     expect(await this.synthesisMarket.containSwapCardList(1)).to.be.false
-    expect(await this.synthesisMarket.containSwapCardList(2)).to.be.true
+    expect(await this.synthesisMarket.containSwapCardList(2)).to.be.false
     expect(await this.synthesisMarket.containSwapCardList(3)).to.be.true
     expect(await this.synthesisMarket.containSwapCardList(4)).to.be.true
+    expect(await this.synthesisMarket.containSwapCardList(5)).to.be.true
     expect(await this.synthesisMarket.containSwapCardList(110)).to.be.false
   })
   it("should be synthesis", async function () {
     let tokenIds = []
     for (let i = 0; i < 5; i++) {
       tokenIds.push(await this.nft.tokenOfOwnerByIndex(this.carol.address, i))
-      // console.log(await this.nft.getTokenIdentity(await this.nft.tokenOfOwnerByIndex(this.carol.address, i)))
     }
-    // console.log(await this.synthesisMarket.getSwapCardList())
     await this.token.connect(this.bob).approve(this.synthesisMarket.address, await this.synthesisMarket.unitPrice())
     await this.synthesisMarket
       .connect(this.bob)
@@ -189,6 +189,13 @@ describe("Card Synthesis", function () {
     await this.synthesisMarket.connect(this.eve).synthesis(tokenIds).should.be.rejectedWith("TransferHelper: TRANSFER_FROM_FAILED")
 
     // tokenId not owner
+    await this.synthesisMarket
+      .connect(this.bob)
+      .synthesis([tokenIds[0], tokenIds[1], tokenIds[2], tokenIds[4], tokenIds[4]])
+      .should.be.rejectedWith("Must have mint role")
+
+    await this.nft.grantRole(await this.nft.MINT_ROLE(), this.synthesisMarket.address)
+
     await this.synthesisMarket
       .connect(this.bob)
       .synthesis([tokenIds[0], tokenIds[1], tokenIds[2], tokenIds[4], tokenIds[4]])
@@ -207,42 +214,40 @@ describe("Card Synthesis", function () {
       .synthesis([tokenIds[0], tokenIds[1], tokenIds[2], tokenIds[3], 10])
       .should.be.rejectedWith("identity not in list")
 
-    await this.synthesisMarket.connect(this.carol).synthesis(tokenIds).should.be.rejectedWith("Must have mint role")
+    let tx = await (await this.synthesisMarket.connect(this.carol).synthesis(tokenIds)).wait()
 
-    await this.nft.grantRole(await this.nft.MINT_ROLE(), this.synthesisMarket.address)
-
-    await this.synthesisMarket.connect(this.carol).synthesis(tokenIds)
-
+    let iface = new ethers.utils.Interface(["event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"])
+    let event = iface.parseLog(
+      tx.logs?.filter((x) => {
+        return x.address == this.nft.address && x.topics[0] == iface.getEventTopic("Transfer") && x.topics[1] == ethers.constants.HashZero
+      })[0]
+    )
+    let synthesisedTokenId = event.args.tokenId
     //get info
-    expect(await this.synthesisMarket.getAssetIdOfAddress(this.carol.address)).to.have.lengthOf(1)
+    let lockTokenIds = await this.synthesisMarket.getAssetsIndex(synthesisedTokenId)
+    expect(lockTokenIds).eql(tokenIds)
+    expect(await this.cardSpec.getTokenSkin(synthesisedTokenId)).equal(100)
+    expect(await this.cardSpec.getTokenRarity(synthesisedTokenId)).equal(1)
 
-    expect(await this.synthesisMarket.getAssetIdOfAddress(this.carol.address)).eql([ethers.BigNumber.from(0)])
-
-    let info = await this.synthesisMarket.getAssetInfo(0)
-    expect(info["owner"]).equal(this.carol.address)
-    expect(info["isRedemption"]).to.be.false
-    expect(info["lockTokenIds"]).eql(tokenIds)
-    const convertTokenId = info["convertTokenId"]
-    expect(await this.cardSpec.getTokenSkin(convertTokenId)).equal(100)
-    expect(await this.cardSpec.getTokenRarity(convertTokenId)).equal(1)
-
-    expect(await this.nft.ownerOf(convertTokenId)).equal(this.carol.address)
+    expect(await this.nft.ownerOf(synthesisedTokenId)).equal(this.carol.address)
     expect(await this.nft.balanceOf(this.carol.address)).equal(6)
 
     // redemption
-    await this.synthesisMarket.redemption(0).should.be.rejectedWith("only asset owner")
 
-    await this.synthesisMarket.connect(this.carol).redemption(0).should.be.rejectedWith("TransferHelper: TRANSFER_FROM_FAILED")
+    // not owner
+    await this.synthesisMarket.redemption(synthesisedTokenId).should.be.rejectedWith("not tokens owner")
+
+    await this.synthesisMarket.connect(this.carol).redemption(synthesisedTokenId).should.be.rejectedWith("TransferHelper: TRANSFER_FROM_FAILED")
     await this.token.connect(this.carol).approve(this.synthesisMarket.address, await this.synthesisMarket.unitPrice())
-    await this.synthesisMarket.connect(this.carol).redemption(0).should.be.rejectedWith("ERC721: transfer caller is not owner nor approved")
-    await this.nft.connect(this.carol).approve(this.synthesisMarket.address, convertTokenId)
+    await this.synthesisMarket.connect(this.carol).redemption(synthesisedTokenId).should.be.rejectedWith("caller is not owner nor approved")
+    await this.nft.connect(this.carol).approve(this.synthesisMarket.address, synthesisedTokenId)
 
-    await this.synthesisMarket.connect(this.carol).redemption(0)
+    await this.synthesisMarket.connect(this.carol).redemption(synthesisedTokenId)
 
-    // repetitive redemption
-    await this.synthesisMarket.connect(this.carol).redemption(0).should.be.rejectedWith("asset has been redemption")
+    // // repetitive redemption
+    await this.synthesisMarket.connect(this.carol).redemption(synthesisedTokenId).should.be.rejectedWith("asset not found")
 
-    await this.nft.ownerOf(convertTokenId).should.be.rejectedWith("ERC721: owner query for nonexistent token")
+    await this.nft.ownerOf(synthesisedTokenId).should.be.rejectedWith("ERC721: owner query for nonexistent token")
     expect(await this.nft.balanceOf(this.carol.address)).equal(10)
   })
 })

@@ -41,35 +41,25 @@ contract SwapMarket is Ownable, Pausable {
         devaddr = _devaddr;
     }
 
-    function addSwapCardList(uint256 _cardIdSrc, uint256[] memory _cardIds) public onlyOwner {
+    function addSwapCardList(uint256 _identity, uint256[] memory _cardIds) public onlyOwner {
         for (uint256 i; i < _cardIds.length; ++i) {
             require(_cardIds[i] < spec.getCardTypesLength(), 'SwapMarket: card id out of range');
-            identityToswapLists[spec.getIdentityFromCardId(_cardIdSrc)].add(_cardIds[i]);
+            identityToswapLists[_identity].add(_cardIds[i]);
         }
     }
 
-    function removeSwapCardList(uint256 _cardIdSrc, uint256[] memory _cardIds) public onlyOwner {
+    function removeSwapCardList(uint256 _identity, uint256[] memory _cardIds) public onlyOwner {
         for (uint256 i; i < _cardIds.length; ++i) {
-            require(_cardIdSrc < spec.getCardTypesLength(), 'SwapMarket: card id out of range');
-            identityToswapLists[spec.getIdentityFromCardId(_cardIdSrc)].remove(_cardIds[i]);
+            identityToswapLists[_identity].remove(_cardIds[i]);
         }
     }
 
-    function getSwapCardLength(uint256 _cardIdSrc) public view returns (uint256) {
-        return identityToswapLists[spec.getIdentityFromCardId(_cardIdSrc)].length();
+    function getSwapCardLength(uint256 _identity) public view returns (uint256) {
+        return identityToswapLists[_identity].length();
     }
 
-    function getSwapCardAt(uint256 _cardIdSrc, uint256 _index) public view returns (uint256) {
-        return identityToswapLists[spec.getIdentityFromCardId(_cardIdSrc)].at(_index);
-    }
-
-    function getSwapCardList(uint256 _cardId) public view returns (uint256[] memory cardIds) {
-        uint256 identity = spec.getIdentityFromCardId(_cardId);
-        uint256 length = identityToswapLists[identity].length();
-        cardIds = new uint256[](length);
-        for (uint256 i; i < length; ++i) {
-            cardIds[i] = identityToswapLists[identity].at(i);
-        }
+    function getSwapCardAt(uint256 _identity, uint256 _index) public view returns (uint256) {
+        return identityToswapLists[_identity].at(_index);
     }
 
     function setUnitPrice(uint256 price) public onlyOwner {

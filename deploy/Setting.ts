@@ -16,7 +16,6 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   const synthesisMarketV1 = await ethers.getContract("SynthesisMarketV1")
   const synthesisMarketV2 = await ethers.getContract("SynthesisMarketV2")
   const synthesisMarketV3 = await ethers.getContract("SynthesisMarketV3")
-  // const coinWindPool = await ethers.getContract("CoinWindPool")
   const masterChefNFT = await ethers.getContract("MasterChefNFT")
   const masterChef = await ethers.getContract("MasterChef")
 
@@ -62,60 +61,47 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   // swapMarket
   await ncto.grantRole(await ncto.MINT_ROLE(), swapMarket.address)
   await swapMarket.setUnitPrice(ethers.utils.parseUnits("1", 18))
-  await swapMarket.addSwapCardList(3, [4, 5, 10, 14, 15, 18, 19, 20])
-  await swapMarket.addSwapCardList(4, [3, 5, 10, 14, 15, 18, 19, 20])
-  await swapMarket.addSwapCardList(5, [3, 4, 10, 14, 15, 18, 19, 20])
-  await swapMarket.addSwapCardList(10, [3, 4, 5, 14, 15, 18, 19, 20])
-  await swapMarket.addSwapCardList(14, [3, 4, 5, 10, 15, 18, 19, 20])
-  await swapMarket.addSwapCardList(15, [3, 4, 5, 10, 14, 18, 19, 20])
-  await swapMarket.addSwapCardList(18, [3, 4, 5, 10, 14, 15, 19, 20])
-  await swapMarket.addSwapCardList(19, [3, 4, 5, 10, 14, 15, 18, 20])
-  await swapMarket.addSwapCardList(20, [3, 4, 5, 10, 14, 15, 18, 19])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(3), [4, 5, 10, 14, 15, 18, 19, 20])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(4), [3, 5, 10, 14, 15, 18, 19, 20])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(5), [3, 4, 10, 14, 15, 18, 19, 20])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(10), [3, 4, 5, 14, 15, 18, 19, 20])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(14), [3, 4, 5, 10, 15, 18, 19, 20])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(15), [3, 4, 5, 10, 14, 18, 19, 20])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(18), [3, 4, 5, 10, 14, 15, 19, 20])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(19), [3, 4, 5, 10, 14, 15, 18, 20])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(20), [3, 4, 5, 10, 14, 15, 18, 19])
 
-  await swapMarket.addSwapCardList(1, [7, 9, 12, 13, 17])
-  await swapMarket.addSwapCardList(7, [1, 9, 12, 13, 17])
-  await swapMarket.addSwapCardList(9, [1, 7, 12, 13, 17])
-  await swapMarket.addSwapCardList(12, [1, 7, 9, 13, 17])
-  await swapMarket.addSwapCardList(13, [1, 7, 9, 12, 17])
-  await swapMarket.addSwapCardList(17, [1, 7, 9, 12, 13])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(1), [7, 9, 12, 13, 17])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(7), [1, 9, 12, 13, 17])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(9), [1, 7, 12, 13, 17])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(12), [1, 7, 9, 13, 17])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(13), [1, 7, 9, 12, 17])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(17), [1, 7, 9, 12, 13])
 
-  await swapMarket.addSwapCardList(2, [6, 8, 11, 16])
-  await swapMarket.addSwapCardList(6, [2, 8, 11, 16])
-  await swapMarket.addSwapCardList(8, [2, 6, 11, 16])
-  await swapMarket.addSwapCardList(11, [2, 6, 8, 16])
-  await swapMarket.addSwapCardList(16, [2, 6, 8, 11])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(2), [6, 8, 11, 16])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(6), [2, 8, 11, 16])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(8), [2, 6, 11, 16])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(11), [2, 6, 8, 16])
+  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(16), [2, 6, 8, 11])
 
   //  set synthesisMarketV1
   await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV1.address)
   await synthesisMarketV1.setUnitPrice(ethers.utils.parseUnits("1", 18))
+  await synthesisMarketV1.addSwapCardList([3, 4, 5, 10, 14, 15, 18, 19, 20])
   await synthesisMarketV1.setSynthesisCardId(20)
   await synthesisMarketV1.setAllowedLength(5)
-  await synthesisMarketV1.addSwapCardList([3, 4, 5, 10, 14, 15, 18, 19, 20])
   //  set synthesisMarketV2
   await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV2.address)
   await synthesisMarketV2.setUnitPrice(ethers.utils.parseUnits("1", 18))
+  await synthesisMarketV2.addSwapCardList([1, 7, 9, 12, 13, 17])
   await synthesisMarketV2.setSynthesisCardId(21)
   await synthesisMarketV2.setAllowedLength(5)
-  await synthesisMarketV2.addSwapCardList([1, 7, 9, 12, 13, 17])
   //  set synthesisMarketV3
   await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV3.address)
   await synthesisMarketV3.setUnitPrice(ethers.utils.parseUnits("1", 18))
+  await synthesisMarketV3.addSwapCardList([2, 6, 8, 11, 16])
   await synthesisMarketV3.setSynthesisCardId(22)
   await synthesisMarketV3.setAllowedLength(5)
-  await synthesisMarketV3.addSwapCardList([2, 6, 8, 11, 16])
-
-  // coinWind
-  // await cto.grantRole(await cto.MINT_ROLE(), coinWindPool.address)
-  // await coinWindPool.add(
-  //   10, // allocPoint
-  //   WBNB,
-  //   true
-  // )
-  // await coinWindPool.add(
-  //   10, // allocPoint
-  //   USDT,
-  //   true
-  // )
 
   // coinWind nft
   await cto.grantRole(await cto.MINT_ROLE(), masterChefNFT.address)
@@ -228,16 +214,6 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
       },
     },
     pool: {
-      // coinWindPool: {
-      //   address: coinWindPool.address,
-      //   owner: await coinWindPool.owner(),
-      //   devaddr: await coinWindPool.devaddr(),
-      // },
-      // coinWindPoolNFT: {
-      //   address: coinWindPoolNFT.address,
-      //   owner: await coinWindPoolNFT.owner(),
-      //   devaddr: await coinWindPoolNFT.devaddr(),
-      // },
       masterChef: {
         address: masterChef.address,
         owner: await masterChef.owner(),

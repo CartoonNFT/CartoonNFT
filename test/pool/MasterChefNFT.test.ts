@@ -10,13 +10,10 @@ const { expect } = chai
 describe("MasterChef", function () {
   before(async function () {
     this.Token = await ethers.getContractFactory("CartoonToken")
-    this.MasterChef = await ethers.getContractFactory("MasterChef")
-    this.bob = await network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: ["0x631fc1ea2270e98fbd9d92658ece0f5a269aa161"],
-    })
-    this.bob = await ethers.getSigner("0x631fc1ea2270e98fbd9d92658ece0f5a269aa161")
-    ;[this.alice, , this.carol, this.dave, this.eve, this.isaac] = await ethers.getSigners()
+    this.CardSpec = await ethers.getContractFactory("CardSpec")
+    this.ERC721EX = await ethers.getContractFactory("ERC721Ex")
+    this.MasterChef = await ethers.getContractFactory("MasterChefNFT")
+    ;[this.alice, this.bob, this.carol, this.dave, this.eve, this.isaac] = await ethers.getSigners()
 
     const { WBNB, USDT, MDXFactory, MDXRouter } = await getNamedAccounts()
     this.USDT = USDT
@@ -31,31 +28,39 @@ describe("MasterChef", function () {
 
     await this.cto.grantRole(await this.cto.MINT_ROLE(), this.alice.address)
     await this.cto.mint(this.bob.address, ethers.utils.parseUnits("1000", 18))
+
+    this.cardSpec = await this.CardSpec.deploy()
+    await this.cardSpec.deployed()
+    await this.cardSpec.addCardType(1, 1, ethers.utils.formatBytes32String("what?"))
+    await this.cardSpec.addCardType(2, 2, ethers.utils.formatBytes32String("what?"))
+
+    this.nft = await this.ERC721EX.deploy(this.cardSpec.address, this.alice.address)
+    await this.nft.deployed()
+    await this.nft.grantRole(await this.nft.MINT_ROLE(), this.alice.address)
+    for (let i = 0; i < 5; i++) {
+      await this.nft.mintCard(this.bob.address, 1)
+      await this.nft.mintCard(this.bob.address, 2)
+    }
   })
   beforeEach(async function () {
-    this.masterChef = await this.MasterChef.deploy(this.cto.address, ethers.utils.parseUnits("1", 18), this.startBlockNumber)
+    this.masterChef = await this.MasterChef.deploy(
+      this.cto.address,
+      this.nft.address,
+      ethers.utils.parseUnits("1", 18),
+      this.startBlockNumber,
+      this.cardSpec.address
+    )
     await this.masterChef.deployed()
 
-    // createPair
-    if ((await this.mdxFactory.getPair(this.cto.address, this.USDT)) == "0x0000000000000000000000000000000000000000") {
-      await this.mdxFactory.createPair(this.cto.address, this.USDT)
-    }
-    if ((await this.mdxFactory.getPair(this.cto.address, this.WBNB)) == "0x0000000000000000000000000000000000000000") {
-      await this.mdxFactory.createPair(this.cto.address, this.WBNB)
-    }
-    this.cto_usdt = await this.mdxFactory.getPair(this.cto.address, this.USDT)
-    this.cto_wbnb = await this.mdxFactory.getPair(this.cto.address, this.WBNB)
-    expect(this.cto_usdt).not.equal("0x0000000000000000000000000000000000000000")
-    expect(this.cto_wbnb).not.equal("0x0000000000000000000000000000000000000000")
     await this.cto.grantRole(await this.cto.MINT_ROLE(), this.masterChef.address)
     await this.masterChef.add(
       10, // allocPoint
-      this.cto_wbnb,
+      1,
       true
     )
     await this.masterChef.add(
       10, // allocPoint
-      this.cto_usdt,
+      2,
       true
     )
   })
@@ -71,7 +76,7 @@ describe("MasterChef", function () {
     expect(await this.masterChef.poolLength()).equal(2)
     await this.masterChef.add(
       11, // allocPoint
-      this.cto_usdt,
+      1,
       false
     )
     expect(await this.masterChef.poolLength()).equal(3)
@@ -81,12 +86,12 @@ describe("MasterChef", function () {
   })
   it("should be check pool", async function () {
     const poolInfo = await this.masterChef.poolInfo(0)
-    expect(poolInfo["lpToken"]).equal(this.cto_wbnb)
+    expect(poolInfo["tokenIdentity"]).equal(await this.cardSpec.getIdentityFromCardId(1))
     expect(poolInfo["accCtoPerShare"]).equal(0)
     expect(poolInfo["allocPoint"]).equal(10)
 
     const poolInfo2 = await this.masterChef.poolInfo(1)
-    expect(poolInfo2["lpToken"]).equal(this.cto_usdt)
+    expect(poolInfo2["tokenIdentity"]).equal(await this.cardSpec.getIdentityFromCardId(2))
     expect(poolInfo2["accCtoPerShare"]).equal(0)
     expect(poolInfo2["allocPoint"]).equal(10)
   })
@@ -100,40 +105,19 @@ describe("MasterChef", function () {
     expect(poolInfo["allocPoint"]).equal(12)
     expect(await this.masterChef.totalAllocPoint()).equal(22)
   })
-  context("CTO-BNB", async function () {
-    before(async function () {
-      this.cto_wbnb_pair = await ethers.getContractAt("IERC20", this.cto_wbnb)
-      expect(await this.cto_wbnb_pair.balanceOf(this.bob.address)).equal(0)
-    })
+  context("deposit", async function () {
     beforeEach(async function () {
-      let bobCtoBalance = await this.cto.balanceOf(this.bob.address)
-      let bobBalance = await this.bob.getBalance()
-      const deadline = Math.round(new Date(new Date().getTime() + 3600 * 1000).getTime() / 1000)
-      await this.mdxRouter
-        .connect(this.bob)
-        .addLiquidityETH(this.cto.address, ethers.utils.parseEther("1"), 0, 0, this.bob.address, deadline, {
-          value: ethers.utils.parseEther("1"),
-        })
-        .should.be.rejectedWith("TransferHelper: TRANSFER_FROM_FAILED")
-
-      await this.cto.connect(this.bob).approve(this.mdxRouter.address, ethers.utils.parseEther("1"))
-      await this.mdxRouter.connect(this.bob).addLiquidityETH(this.cto.address, ethers.utils.parseEther("1"), 0, 0, this.bob.address, deadline, {
-        value: ethers.utils.parseEther("1"),
-      })
-      const liquidity = await this.cto_wbnb_pair.balanceOf(this.bob.address)
-      expect(liquidity).not.null
-      expect(bobBalance.sub(ethers.utils.parseEther("1"))).to.above(await this.bob.getBalance())
-      expect(bobCtoBalance.sub(ethers.utils.parseEther("1"))).equal(await this.cto.balanceOf(this.bob.address))
-
-      await this.masterChef.connect(this.bob).deposit(0, liquidity).should.be.rejectedWith("SafeMath: subtraction overflow")
-      await this.cto_wbnb_pair.connect(this.bob).approve(this.masterChef.address, liquidity)
-      await this.masterChef.connect(this.bob).deposit(0, liquidity)
+      let tokenId0 = await this.nft.getIdentityTokenAt(this.bob.address, await this.cardSpec.getIdentityFromCardId(1), 0)
+      await this.nft.connect(this.bob).approve(this.masterChef.address, tokenId0)
+      await this.masterChef.connect(this.bob).deposit(0, tokenId0)
     })
     it("deposit", async function () {
-      expect(await this.cto_wbnb_pair.balanceOf(this.bob.address)).equal(0)
-      const liquidity = await this.cto_wbnb_pair.balanceOf(this.masterChef.address)
-      let [amount, amountDebt] = await this.masterChef.userInfo(0, this.bob.address)
-      expect(amount).equal(liquidity)
+      expect(await this.nft.balanceOf(this.bob.address)).equal(9)
+      let [amount, amountDebt] = await this.masterChef.getUserInfo(0, this.bob.address)
+      expect(amount).equal(1)
+      expect(
+        await this.masterChef.containsUserTokenId(0, this.bob.address, await this.masterChef.getUserTokenIndex(0, this.bob.address, 0))
+      ).to.be.true
     })
     it("pending cto", async function () {
       expect(await this.masterChef.pendingCto(0, this.bob.address)).equal(0)
@@ -153,21 +137,24 @@ describe("MasterChef", function () {
       expect((await this.cto.balanceOf(this.bob.address)).sub(oldBalance)).above(0)
     })
     it("withdraw", async function () {
-      const [amount] = await this.masterChef.userInfo(0, this.bob.address)
+      const [amount] = await this.masterChef.getUserInfo(0, this.bob.address)
       const oldBalance = await this.cto.balanceOf(this.bob.address)
-      expect(await this.cto_wbnb_pair.balanceOf(this.bob.address)).equal(0)
-      await this.masterChef.connect(this.bob).withdraw(0, amount.add(1)).should.be.rejectedWith("withdraw: not good")
-      await this.masterChef.connect(this.bob).withdraw(0, amount)
+      expect(await this.nft.balanceOf(this.bob.address)).equal(5)
+
+      const tokenId = await this.masterChef.getUserTokenIndex(0, this.bob.address, 0)
+      expect(await this.nft.ownerOf(tokenId)).equal(this.masterChef.address)
+      await this.masterChef.connect(this.bob).withdraw(0, 212).should.be.rejectedWith("withdraw: not good")
+      await this.masterChef.connect(this.bob).withdraw(0, tokenId)
       expect((await this.cto.balanceOf(this.bob.address)).sub(oldBalance)).above(0)
-      expect(await this.cto_wbnb_pair.balanceOf(this.bob.address)).equal(amount)
+      expect(await this.nft.ownerOf(tokenId)).equal(this.bob.address)
     })
     it("emergencyWithdraw", async function () {
-      const [amount] = await this.masterChef.userInfo(0, this.bob.address)
+      const tokenId = await this.masterChef.getUserTokenIndex(0, this.bob.address, 0)
       const oldBalance = await this.cto.balanceOf(this.bob.address)
-      expect(await this.cto_wbnb_pair.balanceOf(this.bob.address)).equal(0)
-      await this.masterChef.connect(this.bob).emergencyWithdraw(0)
+      expect(await this.nft.ownerOf(tokenId)).equal(this.masterChef.address)
+      await this.masterChef.connect(this.bob).emergencyWithdraw(0, tokenId)
       expect((await this.cto.balanceOf(this.bob.address)).sub(oldBalance)).equal(0)
-      expect(await this.cto_wbnb_pair.balanceOf(this.bob.address)).equal(amount)
+      expect(await this.nft.ownerOf(tokenId)).equal(this.bob.address)
     })
   })
 })

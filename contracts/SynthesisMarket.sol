@@ -16,7 +16,7 @@ contract SynthesisMarket is Ownable, Pausable {
     using EnumerableMapper for EnumerableMapper.UintToUintMap;
 
     struct CardAsset {
-        address owner;
+        bool used;
         // identity -> tokenId
         EnumerableMapper.UintToUintMap lockTokenIds;
     }
@@ -62,6 +62,7 @@ contract SynthesisMarket is Ownable, Pausable {
     }
 
     function setAllowedLength(uint256 length) public onlyOwner {
+        require(length <= swapCardList.length(), 'length out of swap card list');
         swapLength = length;
     }
 
@@ -109,8 +110,7 @@ contract SynthesisMarket is Ownable, Pausable {
         tokenId = nft.mintCard(msg.sender, synthesisCardId);
 
         CardAsset storage asset = assetsIndex[tokenId];
-        asset.owner = msg.sender;
-        require(asset.lockTokenIds.length() == 0, 'length not null');
+        asset.used = true;
         for (uint256 i; i < tokeIds.length; ++i) {
             uint256 identity = spec.getTokenIdentity(tokeIds[i]);
             // check token repetition
@@ -125,24 +125,23 @@ contract SynthesisMarket is Ownable, Pausable {
     // redemption card
     function redemption(uint256 tokenId) external {
         CardAsset storage asset = assetsIndex[tokenId];
-        require(asset.owner == msg.sender, 'only asset owner');
-
+        require(asset.used, 'asset not found');
+        require(nft.ownerOf(tokenId) == msg.sender, 'not tokens owner');
         // pay some token to dev
         TransferHelper.safeTransferFrom(address(cto), msg.sender, devaddr, unitPrice);
 
         nft.burn(tokenId);
 
-        for (uint256 i; i < asset.lockTokenIds.length(); ++i) {
-            (uint256 identity, uint256 tokenId) = asset.lockTokenIds.at(i);
+        for (; asset.lockTokenIds.length() != 0; ) {
+            (uint256 identity, uint256 tokenId) = asset.lockTokenIds.at(0);
             nft.transferFrom(address(this), msg.sender, tokenId);
             asset.lockTokenIds.remove(identity);
         }
-        asset.owner = address(0);
+        asset.used = false;
     }
 
-    function getAssetsIndex(uint256 tokenId) external view returns (address owner, uint256[] memory lockedTokenIds) {
+    function getAssetsIndex(uint256 tokenId) external view returns (uint256[] memory lockedTokenIds) {
         CardAsset storage asset = assetsIndex[tokenId];
-        owner = asset.owner;
         lockedTokenIds = new uint256[](asset.lockTokenIds.length());
         for (uint256 i; i < asset.lockTokenIds.length(); i++) {
             (, uint256 lockedTokenId) = asset.lockTokenIds.at(i);
