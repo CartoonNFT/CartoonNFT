@@ -237,7 +237,10 @@ describe("Card Synthesis", function () {
     // not owner
     await this.synthesisMarket.decomposition(synthesisedTokenId).should.be.rejectedWith("not tokens owner")
 
-    await this.synthesisMarket.connect(this.carol).decomposition(synthesisedTokenId).should.be.rejectedWith("TransferHelper: TRANSFER_FROM_FAILED")
+    await this.synthesisMarket
+      .connect(this.carol)
+      .decomposition(synthesisedTokenId)
+      .should.be.rejectedWith("TransferHelper: TRANSFER_FROM_FAILED")
     await this.token.connect(this.carol).approve(this.synthesisMarket.address, await this.synthesisMarket.unitPrice())
     await this.synthesisMarket.connect(this.carol).decomposition(synthesisedTokenId).should.be.rejectedWith("caller is not owner nor approved")
     await this.nft.connect(this.carol).approve(this.synthesisMarket.address, synthesisedTokenId)

@@ -219,7 +219,7 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
         devaddr: await swapMarket.devaddr(),
       },
     },
-    exchange: {
+    exchangeNFT: {
       address: exchangeNFT.address,
       owner: await exchangeNFT.owner(),
       devaddr: await exchangeNFT.devaddr(),
@@ -241,4 +241,4 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   }
   console.log(info)
 }
-module.exports.dependencies = ["Shop", "SynthesisMarket", "SwapMarket", "TimeLock", "MasterChefNFT", "MasterChef"]
+module.exports.dependencies = ["Shop", "SynthesisMarket", "SwapMarket", "TimeLock", "MasterChefNFT", "MasterChef", "ExchangeNFT"]
