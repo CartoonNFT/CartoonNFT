@@ -17,8 +17,6 @@ contract SynthesisMarket is Ownable, Pausable {
 
     struct CardAsset {
         address owner;
-        bool isRedemption;
-        uint256 convertTokenId;
         // identity -> tokenId
         EnumerableMapper.UintToUintMap lockTokenIds;
     }
@@ -34,8 +32,6 @@ contract SynthesisMarket is Ownable, Pausable {
     uint256 public synthesisCardId;
     // erc721 token
     ERC721Ex public nft;
-    // lock asset info
-    CardAsset[] private assets;
 
     // identity -> cardId
     // list for synthesis cardIds
@@ -43,7 +39,8 @@ contract SynthesisMarket is Ownable, Pausable {
 
     uint256 public swapLength;
 
-    mapping(address => EnumerableSet.UintSet) private assetsIndex;
+    // tokenId -> assets
+    mapping(uint256 => CardAsset) private assetsIndex;
 
     constructor(
         address _spec,
@@ -55,7 +52,6 @@ contract SynthesisMarket is Ownable, Pausable {
         cto = IERC20(_token);
         nft = ERC721Ex(_nft);
         devaddr = _devaddr;
-        assets.push();
     }
 
     function addSwapCardList(uint256[] memory cardIds) public onlyOwner {
@@ -64,6 +60,7 @@ contract SynthesisMarket is Ownable, Pausable {
             swapCardList.set(spec.getIdentityFromCardId(cardIds[i]), cardIds[i]);
         }
     }
+
     function setAllowedLength(uint256 length) public onlyOwner {
         swapLength = length;
     }
@@ -109,10 +106,11 @@ contract SynthesisMarket is Ownable, Pausable {
         // pay some token to dev
         TransferHelper.safeTransferFrom(address(cto), msg.sender, devaddr, unitPrice);
 
-        assetsIndex[msg.sender].add(assets.length);
-        CardAsset storage asset = assets.push();
-        asset.owner = msg.sender;
+        tokenId = nft.mintCard(msg.sender, synthesisCardId);
 
+        CardAsset storage asset = assetsIndex[tokenId];
+        asset.owner = msg.sender;
+        require(asset.lockTokenIds.length() == 0, 'length not null');
         for (uint256 i; i < tokeIds.length; ++i) {
             uint256 identity = spec.getTokenIdentity(tokeIds[i]);
             // check token repetition
@@ -122,61 +120,33 @@ contract SynthesisMarket is Ownable, Pausable {
             asset.lockTokenIds.set(identity, tokeIds[i]);
             nft.transferFrom(msg.sender, address(this), tokeIds[i]);
         }
-        tokenId = nft.mintCard(msg.sender, synthesisCardId);
-        asset.convertTokenId = tokenId;
     }
 
     // redemption card
-    function redemption(uint256 assetId) external {
-        CardAsset storage asset = assets[assetId];
-        require(!asset.isRedemption, 'asset has been redemption');
+    function redemption(uint256 tokenId) external {
+        CardAsset storage asset = assetsIndex[tokenId];
         require(asset.owner == msg.sender, 'only asset owner');
 
         // pay some token to dev
         TransferHelper.safeTransferFrom(address(cto), msg.sender, devaddr, unitPrice);
 
-        nft.transferFrom(msg.sender, address(this), asset.convertTokenId);
-        nft.burn(asset.convertTokenId);
+        nft.burn(tokenId);
 
-        asset.isRedemption = true;
         for (uint256 i; i < asset.lockTokenIds.length(); ++i) {
-            (, uint256 tokenId) = asset.lockTokenIds.at(i);
+            (uint256 identity, uint256 tokenId) = asset.lockTokenIds.at(i);
             nft.transferFrom(address(this), msg.sender, tokenId);
+            asset.lockTokenIds.remove(identity);
         }
+        asset.owner = address(0);
     }
 
-    function getAssetIdOfAddress(address from) external view returns (uint256[] memory list) {
-        list = new uint256[](assetsIndex[from].length());
-        for (uint256 i = 0; i < assetsIndex[from].length(); i++) {
-            list[i] = assetsIndex[from].at(i);
-        }
-    }
-
-    function getAssetInfo(uint256 assetId)
-        external
-        view
-        returns (
-            address owner,
-            bool isRedemption,
-            uint256 convertTokenId,
-            uint256[] memory lockTokenIds
-        )
-    {
-        CardAsset storage asset = assets[assetId];
-        lockTokenIds = new uint256[](asset.lockTokenIds.length());
-        for (uint256 i = 0; i < asset.lockTokenIds.length(); i++) {
-            (, lockTokenIds[i]) = asset.lockTokenIds.at(i);
-        }
-        return (asset.owner, asset.isRedemption, asset.convertTokenId, lockTokenIds);
-    }
-
-    function getRedemptionAssetId(address from) external view returns (uint256) {
-        for (uint256 i; i < assetsIndex[from].length(); i++) {
-            uint256 assetId = assetsIndex[from].at(i);
-            CardAsset storage asset = assets[assetId];
-            if(asset.isRedemption == false) {
-                return assetId;
-            }
+    function getAssetsIndex(uint256 tokenId) external view returns (address owner, uint256[] memory lockedTokenIds) {
+        CardAsset storage asset = assetsIndex[tokenId];
+        owner = asset.owner;
+        lockedTokenIds = new uint256[](asset.lockTokenIds.length());
+        for (uint256 i; i < asset.lockTokenIds.length(); i++) {
+            (, uint256 lockedTokenId) = asset.lockTokenIds.at(i);
+            lockedTokenIds[i] = lockedTokenId;
         }
     }
 
