@@ -18,6 +18,7 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   const synthesisMarketV3 = await ethers.getContract("SynthesisMarketV3")
   const masterChefNFT = await ethers.getContract("MasterChefNFT")
   const masterChef = await ethers.getContract("MasterChef")
+  const exchangeNFT = await ethers.getContract("ExchangeNFT")
 
   // add card types
   await cardSpec.addCardType(1000, 1001, ethers.utils.formatBytes32String("Jun Uozumi"))
@@ -138,6 +139,11 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
     cto_usdt,
     true
   )
+
+  // set exchangeNFT feeToRate
+
+  await exchangeNFT.setFeeToRate(ethers.utils.parseUnits("1", 10))
+
   console.log(await getNamedAccounts())
   let info = {
     token: {
@@ -212,6 +218,11 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
         owner: await swapMarket.owner(),
         devaddr: await swapMarket.devaddr(),
       },
+    },
+    exchange: {
+      address: exchangeNFT.address,
+      owner: await exchangeNFT.owner(),
+      devaddr: await exchangeNFT.devaddr(),
     },
     pool: {
       masterChef: {
