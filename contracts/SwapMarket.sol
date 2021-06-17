@@ -67,14 +67,14 @@ contract SwapMarket is Ownable, Pausable {
     }
 
     // synthesis card
-    function swap(uint256 tokeIdSrc, uint256 cardIdDst) external whenNotPaused returns (uint256 tokenId) {
-        uint256 identity = spec.getTokenIdentity(tokeIdSrc);
+    function swap(uint256 tokenIdsrc, uint256 cardIdDst) external whenNotPaused returns (uint256 tokenId) {
+        uint256 identity = spec.getTokenIdentity(tokenIdsrc);
         require(identityToswapLists[identity].contains(cardIdDst), 'SwapMarket: no swap list');
 
         // pay some token to dev
         TransferHelper.safeTransferFrom(address(cto), msg.sender, devaddr, unitPrice);
 
-        nft.burn(tokeIdSrc);
+        nft.burn(tokenIdsrc);
 
         tokenId = nft.mintCard(msg.sender, cardIdDst);
     }

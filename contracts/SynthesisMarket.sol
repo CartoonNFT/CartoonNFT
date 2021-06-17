@@ -101,8 +101,8 @@ contract SynthesisMarket is Ownable, Pausable {
     }
 
     // synthesis card
-    function synthesis(uint256[] calldata tokeIds) external whenNotPaused returns (uint256 tokenId) {
-        require(tokeIds.length == swapLength, 'length mismatch');
+    function synthesis(uint256[] calldata tokenIds) external whenNotPaused returns (uint256 tokenId) {
+        require(tokenIds.length == swapLength, 'length mismatch');
 
         // pay some token to dev
         TransferHelper.safeTransferFrom(address(cto), msg.sender, devaddr, unitPrice);
@@ -111,19 +111,19 @@ contract SynthesisMarket is Ownable, Pausable {
 
         CardAsset storage asset = assetsIndex[tokenId];
         asset.used = true;
-        for (uint256 i; i < tokeIds.length; ++i) {
-            uint256 identity = spec.getTokenIdentity(tokeIds[i]);
+        for (uint256 i; i < tokenIds.length; ++i) {
+            uint256 identity = spec.getTokenIdentity(tokenIds[i]);
             // check token repetition
             require(!asset.lockTokenIds.contains(identity), 'identity has been exist');
             // check token identity not in the list
             require(swapCardList.contains(identity), 'identity not in list');
-            asset.lockTokenIds.set(identity, tokeIds[i]);
-            nft.transferFrom(msg.sender, address(this), tokeIds[i]);
+            asset.lockTokenIds.set(identity, tokenIds[i]);
+            nft.transferFrom(msg.sender, address(this), tokenIds[i]);
         }
     }
 
-    // redemption card
-    function redemption(uint256 tokenId) external {
+    // decomposition card
+    function decomposition(uint256 tokenId) external {
         CardAsset storage asset = assetsIndex[tokenId];
         require(asset.used, 'asset not found');
         require(nft.ownerOf(tokenId) == msg.sender, 'not tokens owner');

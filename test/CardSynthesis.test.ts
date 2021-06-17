@@ -232,20 +232,20 @@ describe("Card Synthesis", function () {
     expect(await this.nft.ownerOf(synthesisedTokenId)).equal(this.carol.address)
     expect(await this.nft.balanceOf(this.carol.address)).equal(6)
 
-    // redemption
+    // decomposition
 
     // not owner
-    await this.synthesisMarket.redemption(synthesisedTokenId).should.be.rejectedWith("not tokens owner")
+    await this.synthesisMarket.decomposition(synthesisedTokenId).should.be.rejectedWith("not tokens owner")
 
-    await this.synthesisMarket.connect(this.carol).redemption(synthesisedTokenId).should.be.rejectedWith("TransferHelper: TRANSFER_FROM_FAILED")
+    await this.synthesisMarket.connect(this.carol).decomposition(synthesisedTokenId).should.be.rejectedWith("TransferHelper: TRANSFER_FROM_FAILED")
     await this.token.connect(this.carol).approve(this.synthesisMarket.address, await this.synthesisMarket.unitPrice())
-    await this.synthesisMarket.connect(this.carol).redemption(synthesisedTokenId).should.be.rejectedWith("caller is not owner nor approved")
+    await this.synthesisMarket.connect(this.carol).decomposition(synthesisedTokenId).should.be.rejectedWith("caller is not owner nor approved")
     await this.nft.connect(this.carol).approve(this.synthesisMarket.address, synthesisedTokenId)
 
-    await this.synthesisMarket.connect(this.carol).redemption(synthesisedTokenId)
+    await this.synthesisMarket.connect(this.carol).decomposition(synthesisedTokenId)
 
-    // // repetitive redemption
-    await this.synthesisMarket.connect(this.carol).redemption(synthesisedTokenId).should.be.rejectedWith("asset not found")
+    // // repetitive decomposition
+    await this.synthesisMarket.connect(this.carol).decomposition(synthesisedTokenId).should.be.rejectedWith("asset not found")
 
     await this.nft.ownerOf(synthesisedTokenId).should.be.rejectedWith("ERC721: owner query for nonexistent token")
     expect(await this.nft.balanceOf(this.carol.address)).equal(10)
