@@ -108,17 +108,17 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   await cto.grantRole(await cto.MINT_ROLE(), masterChefNFT.address)
   await masterChefNFT.add(
     10, // allocPoint
-    20, //cardId
-    true
-  )
-  await masterChefNFT.add(
-    20, // allocPoint
     21, //cardId
     true
   )
   await masterChefNFT.add(
-    30, // allocPoint
+    20, // allocPoint
     22, //cardId
+    true
+  )
+  await masterChefNFT.add(
+    30, // allocPoint
+    23, //cardId
     true
   )
 
