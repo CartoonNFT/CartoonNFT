@@ -245,7 +245,17 @@ describe("Card Synthesis", function () {
     await this.synthesisMarket.connect(this.carol).decomposition(synthesisedTokenId).should.be.rejectedWith("caller is not owner nor approved")
     await this.nft.connect(this.carol).approve(this.synthesisMarket.address, synthesisedTokenId)
 
-    await this.synthesisMarket.connect(this.carol).decomposition(synthesisedTokenId)
+    tx = await (await this.synthesisMarket.connect(this.carol).decomposition(synthesisedTokenId)).wait()
+    // console.log(
+    //   tx.logs?.filter((x) => {
+    //     return (
+    //       x.address == this.nft.address &&
+    //       x.topics[0] == iface.getEventTopic("Transfer") &&
+    //       ethers.BigNumber.from(x.topics[1]).eq(this.synthesisMarket.address) &&
+    //       ethers.BigNumber.from(x.topics[2]).eq(this.carol.address)
+    //     )
+    //   })
+    // )
 
     // // repetitive decomposition
     await this.synthesisMarket.connect(this.carol).decomposition(synthesisedTokenId).should.be.rejectedWith("asset not found")
