@@ -8,10 +8,10 @@ task("faucet", "send ethers and token to hardhat network")
     const { deployer, dev } = await getNamedAccounts();
     await network.provider.request({
       method: "hardhat_impersonateAccount",
-      params: ["0xf977814e90da44bfa03b6295a0616a897441acec"],
+      params: ["0xC86BA44Ad1ab1D2329833a8E186B568e87295619"],
     });
     const wallet = await ethers.getSigner(
-      "0xf977814e90da44bfa03b6295a0616a897441acec"
+      "0xC86BA44Ad1ab1D2329833a8E186B568e87295619"
     );
     // Send ethers
     await wallet.sendTransaction({
