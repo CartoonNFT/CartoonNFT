@@ -54,9 +54,6 @@ const config: HardhatUserConfig = {
     foundationRewardAddress: {
       default: process.env.FOUNDATION_REWARD_ADDRESS
     },
-    CoinWind: {
-      default: '0x6bA7d75eC6576F88a10bE832C56F0F27DC040dDD'
-    },
     WBNB: {
       default: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
     },
@@ -79,13 +76,14 @@ const config: HardhatUserConfig = {
       accounts,
       gasPrice: 5 * 1000000000,
       chainId: 56,
+      gasMultiplier: 1.5,
     },
-    // "bsc-testnet": {
-    //   url: `https://data-seed-prebsc-2-s3.binance.org:8545/`,
-    //   accounts,
-    //   chainId: 97,
-    //   gasMultiplier: 2,
-    // },
+    "bsc-testnet": {
+      url: `https://data-seed-prebsc-2-s3.binance.org:8545/`,
+      accounts,
+      chainId: 97,
+      gasMultiplier: 1,
+    },
     // localhost: {
     //   saveDeployments: true,
     //   tags: ["local"],

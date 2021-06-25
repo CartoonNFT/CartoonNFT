@@ -1,0 +1,35 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/mocks/RevertingERC20Mock.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity >=0.5.0 <0.8.0;\n\n// RevertingERC20 reverts on errors\ncontract RevertingERC20Mock {\n    string public symbol;\n    string public name;\n    uint8 public immutable decimals;\n    uint256 public totalSupply;\n    mapping(address => uint256) public balanceOf;\n    mapping(address => mapping(address => uint256)) public allowance;\n\n    event Transfer(address indexed _from, address indexed _to, uint256 _value);\n    event Approval(address indexed _owner, address indexed _spender, uint256 _value);\n\n    constructor(\n        string memory name_,\n        string memory symbol_,\n        uint8 decimals_,\n        uint256 supply\n    ) public {\n        name = name_;\n        symbol = symbol_;\n        decimals = decimals_;\n        totalSupply = supply;\n        balanceOf[msg.sender] = supply;\n    }\n\n    function transfer(address to, uint256 amount) public returns (bool success) {\n        require(balanceOf[msg.sender] >= amount, 'TokenB: balance too low');\n        require(amount >= 0, 'TokenB: amount should be > 0');\n        require(balanceOf[to] + amount >= balanceOf[to], 'TokenB: overflow detected');\n        balanceOf[msg.sender] -= amount;\n        balanceOf[to] += amount;\n        emit Transfer(msg.sender, to, amount);\n        return true;\n    }\n\n    function transferFrom(\n        address from,\n        address to,\n        uint256 amount\n    ) public returns (bool success) {\n        require(balanceOf[from] >= amount, 'TokenB: balance too low');\n        require(allowance[from][msg.sender] >= amount, 'TokenB: allowance too low');\n        require(amount >= 0, 'TokenB: amount should be >= 0');\n        require(balanceOf[to] + amount >= balanceOf[to], 'TokenB: overflow detected');\n        balanceOf[from] -= amount;\n        allowance[from][msg.sender] -= amount;\n        balanceOf[to] += amount;\n        emit Transfer(from, to, amount);\n        return true;\n    }\n\n    function approve(address spender, uint256 amount) public returns (bool success) {\n        allowance[msg.sender][spender] = amount;\n        emit Approval(msg.sender, spender, amount);\n        return true;\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

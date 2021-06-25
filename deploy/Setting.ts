@@ -1,14 +1,23 @@
-module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, getUnnamedAccounts }) => {
+module.exports = async ({ ethers, network, getNamedAccounts, deployments, getChainId, getUnnamedAccounts }) => {
   const { deploy } = deployments
-  const { deployer, WBNB, USDT, MDXFactory } = await getNamedAccounts()
+  const { deployer } = await getNamedAccounts()
+  let { WBNB, USDT, MDXFactory, MDXRouter } = await getNamedAccounts()
   const { dev } = await ethers.getNamedSigners()
   const { airDrop, consultant, cooperations, operations, IDO, teamRewardAddress, foundationRewardAddress } = await getNamedAccounts()
+  const chainId = await getChainId()
 
-  const mdxFactory = await ethers.getContractAt("IMdexFactory", MDXFactory)
+  let mdxFactory
+  if (chainId == "56" || (chainId == "31337" && network.config.forking)) {
+    mdxFactory = await ethers.getContractAt("IMdexFactory", MDXFactory)
+  } else {
+    mdxFactory = await ethers.getContract("MdexFactoryMock")
+    USDT = (await ethers.getContract("tUSDT")).address
+    WBNB = (await ethers.getContract("tWBNB9")).address
+    MDXRouter = (await ethers.getContract("MdexRouterMock")).address
+  }
 
   const cardSpec = await ethers.getContract("CardSpec")
   const cto = await ethers.getContract("CartoonToken")
-  // const cto = await ethers.getContractAt("CartoonToken", "0x532b8a798e920f4ebee2b0c6cc400d2933971004")
 
   const ncto = await ethers.getContract("NCTO")
   const shop = await ethers.getContract("Shop")
@@ -20,131 +29,305 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   const masterChef = await ethers.getContract("MasterChef")
   const exchangeNFT = await ethers.getContract("ExchangeNFT")
 
-  // add card types
-  await cardSpec.addCardType(1000, 1001, ethers.utils.formatBytes32String("Jun Uozumi"))
-  await cardSpec.addCardType(1001, 1002, ethers.utils.formatBytes32String("Akira Sendoh"))
-  await cardSpec.addCardType(1002, 1000, ethers.utils.formatBytes32String("Kicchou Fukuda"))
-  await cardSpec.addCardType(1003, 1000, ethers.utils.formatBytes32String("Hiroaki Koshino"))
-  await cardSpec.addCardType(1004, 1000, ethers.utils.formatBytes32String("Tomoyuki Uekusa"))
-
-  await cardSpec.addCardType(1005, 1002, ethers.utils.formatBytes32String("Hanamichi Sakuragi"))
-  await cardSpec.addCardType(1006, 1001, ethers.utils.formatBytes32String("Takenori Akagi"))
-  await cardSpec.addCardType(1007, 1002, ethers.utils.formatBytes32String("Kaede Rukawa"))
-  await cardSpec.addCardType(1008, 1001, ethers.utils.formatBytes32String("Hisashi Mitsui"))
-  await cardSpec.addCardType(1009, 1000, ethers.utils.formatBytes32String("Ryota Miyagi"))
-
-  await cardSpec.addCardType(1010, 1002, ethers.utils.formatBytes32String("Shinichi Maki"))
-  await cardSpec.addCardType(1011, 1001, ethers.utils.formatBytes32String("Soichiro Jin"))
-  await cardSpec.addCardType(1012, 1001, ethers.utils.formatBytes32String("Nobunaga Kiyota"))
-  await cardSpec.addCardType(1013, 1000, ethers.utils.formatBytes32String("Yoshinori Miyawasu"))
-  await cardSpec.addCardType(1014, 1000, ethers.utils.formatBytes32String("Kazuma Takasago"))
-
-  await cardSpec.addCardType(1015, 1002, ethers.utils.formatBytes32String("Kenji Fujima"))
-  await cardSpec.addCardType(1016, 1001, ethers.utils.formatBytes32String("Toru Hanagata"))
-  await cardSpec.addCardType(1017, 1000, ethers.utils.formatBytes32String("Kazushi Hasegawa"))
-  await cardSpec.addCardType(1018, 1000, ethers.utils.formatBytes32String("Mitsuru Nagano"))
-  await cardSpec.addCardType(1019, 1000, ethers.utils.formatBytes32String("Shoichi Takano"))
-
-  await cardSpec.addCardType(2000, 1000, ethers.utils.formatBytes32String("MiningCardv1"))
-  await cardSpec.addCardType(2001, 1001, ethers.utils.formatBytes32String("MiningCardv2"))
-  await cardSpec.addCardType(2002, 1002, ethers.utils.formatBytes32String("MiningCardv3"))
+  console.log("starting add card...")
+  let skin = [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019,
+    2000,
+    2001,
+    2002,
+  ]
+  let rarity = [
+    1001,
+    1002,
+    1000,
+    1000,
+    1000,
+    1002,
+    1001,
+    1002,
+    1001,
+    1000,
+    1002,
+    1001,
+    1001,
+    1000,
+    1000,
+    1002,
+    1001,
+    1000,
+    1000,
+    1000,
+    1000,
+    1001,
+    1002,
+  ]
+  let comment = [
+    "Jun Uozumi",
+    "Akira Sendoh",
+    "Kicchou Fukuda",
+    "Hiroaki Koshino",
+    "Tomoyuki Uekusa",
+    "Hanamichi Sakuragi",
+    "Takenori Akagi",
+    "Kaede Rukawa",
+    "Hisashi Mitsui",
+    "Ryota Miyagi",
+    "Shinichi Maki",
+    "Soichiro Jin",
+    "Nobunaga Kiyota",
+    "Yoshinori Miyawasu",
+    "Kazuma Takasago",
+    "Kenji Fujima",
+    "Toru Hanagata",
+    "Kazushi Hasegawa",
+    "Mitsuru Nagano",
+    "Shoichi Takano",
+    "MiningCardv1",
+    "MiningCardv2",
+    "MiningCardv3",
+  ]
+  for (let i = 0; i < 23; i++) {
+    if (i + 1 == (await cardSpec.getCardTypesLength())) {
+      console.log("add cardId:", i + 1)
+      await (await cardSpec.addCardType(skin[i], rarity[i], ethers.utils.formatBytes32String(comment[i]))).wait()
+    }
+  }
 
   // mint card to shop
-  await ncto.grantRole(await ncto.MINT_ROLE(), shop.address)
-  await ncto.grantRole(await ncto.UPDATE_TOKEN_URI_ROLE(), deployer)
-  await ncto.setBaseURI(process.env.BASE_URI)
-  await shop.setUnitPrice(ethers.utils.parseUnits("1", 18))
 
-  for (let i = 0; i < 20; i++) {
-    await shop.changeBlindBoxCard(i, 100)
+  if ((await cto.hasRole(await cto.MINT_ROLE(), masterChef.address)) == false) {
+    console.log("cto grant masterChef mint Role...")
+    await (await cto.grantRole(await cto.MINT_ROLE(), masterChef.address)).wait()
+  }
+  if ((await cto.hasRole(await cto.MINT_ROLE(), masterChefNFT.address)) == false) {
+    console.log("cto grant masterChefNFT mint Role...")
+    await (await cto.grantRole(await cto.MINT_ROLE(), masterChefNFT.address)).wait()
+  }
+
+  if ((await ncto.hasRole(await ncto.MINT_ROLE(), shop.address)) == false) {
+    console.log("ncto shop grant mint Role...")
+    await (await ncto.grantRole(await ncto.MINT_ROLE(), shop.address)).wait()
+  }
+  if ((await ncto.hasRole(await ncto.MINT_ROLE(), swapMarket.address)) == false) {
+    console.log("ncto shop grant swapMarket Role...")
+    await (await ncto.grantRole(await ncto.MINT_ROLE(), swapMarket.address)).wait()
+  }
+  if ((await ncto.hasRole(await ncto.MINT_ROLE(), synthesisMarketV1.address)) == false) {
+    console.log("ncto shop grant synthesisMarketV1 Role...")
+    await (await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV1.address)).wait()
+  }
+  if ((await ncto.hasRole(await ncto.MINT_ROLE(), synthesisMarketV2.address)) == false) {
+    console.log("ncto shop grant synthesisMarketV2 Role...")
+    await (await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV2.address)).wait()
+  }
+  if ((await ncto.hasRole(await ncto.MINT_ROLE(), synthesisMarketV3.address)) == false) {
+    console.log("ncto shop grant synthesisMarketV3 Role...")
+    await (await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV3.address)).wait()
+  }
+
+  if ((await ncto.baseURI()) == "") {
+    if ((await ncto.hasRole(await ncto.UPDATE_TOKEN_URI_ROLE(), shop.address)) == false) {
+      console.log("ncto set baseURI...")
+      await (await ncto.grantRole(await ncto.UPDATE_TOKEN_URI_ROLE(), deployer)).wait()
+      await (await ncto.setBaseURI("https://cartoonnft.io/identity/")).wait()
+      await (await ncto.revokeRole(await ncto.UPDATE_TOKEN_URI_ROLE(), deployer)).wait()
+    }
+  }
+  if ((await shop.unitPrice()) == 0) {
+    console.log("shop setUnitPrice..")
+    await (await shop.setUnitPrice(ethers.utils.parseUnits("1", 18))).wait()
+  }
+
+  for (let i = 0; i < 21; i++) {
+    if ((await shop.getBlindBoxCardNumLength()) == i) {
+      console.log("add blind box cardId:", i + 1)
+      await (await shop.changeBlindBoxCard(i + 1, 100)).wait()
+    }
   }
 
   // swapMarket
-  await ncto.grantRole(await ncto.MINT_ROLE(), swapMarket.address)
-  await swapMarket.setUnitPrice(ethers.utils.parseUnits("1", 18))
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(3), [4, 5, 10, 14, 15, 18, 19, 20])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(4), [3, 5, 10, 14, 15, 18, 19, 20])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(5), [3, 4, 10, 14, 15, 18, 19, 20])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(10), [3, 4, 5, 14, 15, 18, 19, 20])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(14), [3, 4, 5, 10, 15, 18, 19, 20])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(15), [3, 4, 5, 10, 14, 18, 19, 20])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(18), [3, 4, 5, 10, 14, 15, 19, 20])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(19), [3, 4, 5, 10, 14, 15, 18, 20])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(20), [3, 4, 5, 10, 14, 15, 18, 19])
 
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(1), [7, 9, 12, 13, 17])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(7), [1, 9, 12, 13, 17])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(9), [1, 7, 12, 13, 17])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(12), [1, 7, 9, 13, 17])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(13), [1, 7, 9, 12, 17])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(17), [1, 7, 9, 12, 13])
+  if ((await swapMarket.unitPrice()) == 0) {
+    console.log("swapMarket setUnitPrice..")
+    await (await swapMarket.setUnitPrice(ethers.utils.parseUnits("1", 18))).wait()
+  }
 
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(2), [6, 8, 11, 16])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(6), [2, 8, 11, 16])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(8), [2, 6, 11, 16])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(11), [2, 6, 8, 16])
-  await swapMarket.addSwapCardList(await cardSpec.getIdentityFromCardId(16), [2, 6, 8, 11])
+  let cardId = [3, 4, 5, 10, 14, 15, 18, 19, 20, 1, 7, 9, 12, 13, 17, 2, 6, 8, 11, 16]
+  let swapList = [
+    [4, 5, 10, 14, 15, 18, 19, 20],
+    [3, 5, 10, 14, 15, 18, 19, 20],
+    [3, 4, 10, 14, 15, 18, 19, 20],
+    [3, 4, 5, 14, 15, 18, 19, 20],
+    [3, 4, 5, 10, 15, 18, 19, 20],
+    [3, 4, 5, 10, 14, 18, 19, 20],
+    [3, 4, 5, 10, 14, 15, 19, 20],
+    [3, 4, 5, 10, 14, 15, 18, 20],
+    [3, 4, 5, 10, 14, 15, 18, 19],
+    [7, 9, 12, 13, 17],
+    [1, 9, 12, 13, 17],
+    [1, 7, 12, 13, 17],
+    [1, 7, 9, 13, 17],
+    [1, 7, 9, 12, 17],
+    [1, 7, 9, 12, 13],
+    [6, 8, 11, 16],
+    [2, 8, 11, 16],
+    [2, 6, 11, 16],
+    [2, 6, 8, 16],
+    [2, 6, 8, 11],
+  ]
+
+  for (let i = 0; i < 20; i++) {
+    let identity = await cardSpec.getIdentityFromCardId(cardId[i])
+    if (await swapMarket.getSwapCardLength(identity) == 0) {
+      console.log("add swap market", i + 1)
+      await (await swapMarket.addSwapCardList(identity, swapList[i])).wait()
+    }
+  }
 
   //  set synthesisMarketV1
-  await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV1.address)
-  await synthesisMarketV1.setUnitPrice(ethers.utils.parseUnits("1", 18))
-  await synthesisMarketV1.addSwapCardList([3, 4, 5, 10, 14, 15, 18, 19, 20])
-  await synthesisMarketV1.setSynthesisCardId(21)
-  await synthesisMarketV1.setAllowedLength(5)
+  if ((await synthesisMarketV1.unitPrice()) == 0) {
+    console.log("synthesisMarketV1 setUnitPrice..")
+    await (await synthesisMarketV1.setUnitPrice(ethers.utils.parseUnits("1", 18))).wait()
+  }
+  console.log("adding synthesisMarketV1 list...")
+  if ((await synthesisMarketV1.getSwapCardListLength()) == 0) {
+    await (await synthesisMarketV1.addSwapCardList([3, 4, 5, 10, 14, 15, 18, 19, 20])).wait()
+  }
+  if ((await synthesisMarketV1.synthesisCardId()) == 0) {
+    await (await synthesisMarketV1.setSynthesisCardId(21)).wait()
+  }
+  if ((await synthesisMarketV1.swapLength()) == 0) {
+    await (await synthesisMarketV1.setAllowedLength(5)).wait()
+  }
+
   //  set synthesisMarketV2
-  await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV2.address)
-  await synthesisMarketV2.setUnitPrice(ethers.utils.parseUnits("1", 18))
-  await synthesisMarketV2.addSwapCardList([1, 7, 9, 12, 13, 17])
-  await synthesisMarketV2.setSynthesisCardId(22)
-  await synthesisMarketV2.setAllowedLength(5)
+  if ((await synthesisMarketV2.unitPrice()) == 0) {
+    console.log("synthesisMarketV2 setUnitPrice..")
+    await (await synthesisMarketV2.setUnitPrice(ethers.utils.parseUnits("1", 18))).wait()
+  }
+  console.log("adding synthesisMarketV2 list...")
+  if ((await synthesisMarketV2.getSwapCardListLength()) == 0) {
+    await (await synthesisMarketV2.addSwapCardList([1, 7, 9, 12, 13, 17])).wait()
+  }
+  if ((await synthesisMarketV2.synthesisCardId()) == 0) {
+    await (await synthesisMarketV2.setSynthesisCardId(22)).wait()
+  }
+  if ((await synthesisMarketV2.swapLength()) == 0) {
+    await (await synthesisMarketV2.setAllowedLength(5)).wait()
+  }
+
   //  set synthesisMarketV3
-  await ncto.grantRole(await ncto.MINT_ROLE(), synthesisMarketV3.address)
-  await synthesisMarketV3.setUnitPrice(ethers.utils.parseUnits("1", 18))
-  await synthesisMarketV3.addSwapCardList([2, 6, 8, 11, 16])
-  await synthesisMarketV3.setSynthesisCardId(23)
-  await synthesisMarketV3.setAllowedLength(5)
+  if ((await synthesisMarketV3.unitPrice()) == 0) {
+    console.log("synthesisMarketV3 setUnitPrice..")
+    await (await synthesisMarketV3.setUnitPrice(ethers.utils.parseUnits("1", 18))).wait()
+  }
+  console.log("adding synthesisMarketV3 list...")
+  if ((await synthesisMarketV3.getSwapCardListLength()) == 0) {
+    await (await synthesisMarketV3.addSwapCardList([2, 6, 8, 11, 16])).wait()
+  }
+  if ((await synthesisMarketV3.synthesisCardId()) == 0) {
+    await (await synthesisMarketV3.setSynthesisCardId(23)).wait()
+  }
+  if ((await synthesisMarketV3.swapLength()) == 0) {
+    await (await synthesisMarketV3.setAllowedLength(5)).wait()
+  }
 
-  // coinWind nft
-  await cto.grantRole(await cto.MINT_ROLE(), masterChefNFT.address)
-  await masterChefNFT.add(
-    10, // allocPoint
-    21, //cardId
-    true
-  )
-  await masterChefNFT.add(
-    20, // allocPoint
-    22, //cardId
-    true
-  )
-  await masterChefNFT.add(
-    30, // allocPoint
-    23, //cardId
-    true
-  )
+  // masterChefNFT
+  console.log("adding masterChefNFT pool...")
+  if ((await masterChefNFT.poolLength()) == 0) {
+    console.log("adding masterChefNFT pool 0")
+    await (
+      await masterChefNFT.add(
+        10, // allocPoint
+        21, //cardId
+        true
+      )
+    ).wait()
+  }
 
-  // MasterChef
-  await mdxFactory.createPair(cto.address, USDT)
-  await mdxFactory.createPair(cto.address, WBNB)
+  if ((await masterChefNFT.poolLength()) == 1) {
+    console.log("adding masterChefNFT pool 1")
+    await (
+      await masterChefNFT.add(
+        20, // allocPoint
+        22, //cardId
+        true
+      )
+    ).wait()
+  }
+  if ((await masterChefNFT.poolLength()) == 2) {
+    console.log("adding masterChefNFT pool 2")
+    await (
+      await masterChefNFT.add(
+        30, // allocPoint
+        23, //cardId
+        true
+      )
+    ).wait()
+  }
+
+  if ((await mdxFactory.getPair(cto.address, USDT)) == "0x0000000000000000000000000000000000000000") {
+    console.log("create pair cto_usdt")
+    await (await mdxFactory.createPair(cto.address, USDT)).wait()
+  }
+
+  if ((await mdxFactory.getPair(cto.address, WBNB)) == "0x0000000000000000000000000000000000000000") {
+    console.log("create pair cto_wbnb")
+    await (await mdxFactory.createPair(cto.address, WBNB)).wait()
+  }
   const cto_usdt = await mdxFactory.getPair(cto.address, USDT)
   const cto_wbnb = await mdxFactory.getPair(cto.address, WBNB)
 
-  await cto.grantRole(await cto.MINT_ROLE(), masterChef.address)
-  await masterChef.add(
-    10, // allocPoint
-    cto_wbnb,
-    true
-  )
-  await masterChef.add(
-    10, // allocPoint
-    cto_usdt,
-    true
-  )
+  // MasterChef
+  console.log("adding masterChef pool...")
+  if ((await masterChef.poolLength()) == 0) {
+    console.log("adding masterChef pool 0")
+    await (
+      await masterChef.add(
+        10, // allocPoint
+        cto_wbnb,
+        true
+      )
+    ).wait()
+  }
+  if ((await masterChef.poolLength()) == 1) {
+    console.log("adding masterChef pool 1")
+    await (
+      await masterChef.add(
+        10, // allocPoint
+        cto_usdt,
+        true
+      )
+    ).wait()
+  }
 
   // set exchangeNFT feeToRate
-
-  await exchangeNFT.setFeeToRate(ethers.utils.parseUnits("1", 10))
+  if ((await exchangeNFT.feeToRate()) == 0) {
+    console.log("setting exchangeNFT feeToRate...")
+    await (await exchangeNFT.setFeeToRate(ethers.utils.parseUnits("1", 10))).wait()
+  }
 
   console.log(await getNamedAccounts())
+
   let info = {
     token: {
       address: cto.address,
@@ -197,32 +380,38 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
         address: shop.address,
         owner: await shop.owner(),
         devaddr: await shop.devaddr(),
+        price: (await shop.unitPrice()).toString(),
       },
       synthesisMarketV1: {
         address: synthesisMarketV1.address,
         owner: await synthesisMarketV1.owner(),
         devaddr: await synthesisMarketV1.devaddr(),
+        price: (await synthesisMarketV1.unitPrice()).toString(),
       },
       synthesisMarketV2: {
         address: synthesisMarketV2.address,
         owner: await synthesisMarketV2.owner(),
         devaddr: await synthesisMarketV2.devaddr(),
+        price: (await synthesisMarketV2.unitPrice()).toString(),
       },
       synthesisMarketV3: {
         address: synthesisMarketV3.address,
         owner: await synthesisMarketV3.owner(),
         devaddr: await synthesisMarketV3.devaddr(),
+        price: (await synthesisMarketV3.unitPrice()).toString(),
       },
       swapMarket: {
         address: swapMarket.address,
         owner: await swapMarket.owner(),
         devaddr: await swapMarket.devaddr(),
+        price: (await swapMarket.unitPrice()).toString(),
       },
     },
     exchangeNFT: {
       address: exchangeNFT.address,
       owner: await exchangeNFT.owner(),
       devaddr: await exchangeNFT.devaddr(),
+      feeToRate: (await exchangeNFT.feeToRate()).toString(),
     },
     pool: {
       masterChef: {
@@ -234,6 +423,10 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
         owner: await masterChefNFT.owner(),
       },
       swapPair: {
+        factory: mdxFactory.address,
+        router: MDXRouter,
+        usdt: USDT,
+        WBNB: WBNB,
         "cto-usdt": cto_usdt,
         "cto-wbnb": cto_wbnb,
       },
@@ -241,4 +434,4 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   }
   console.log(info)
 }
-module.exports.dependencies = ["Shop", "SynthesisMarket", "SwapMarket", "TimeLock", "MasterChefNFT", "MasterChef", "ExchangeNFT"]
+module.exports.dependencies = ["Shop", "SynthesisMarket", "SwapMarket", "TimeLock", "MasterChefNFT", "MasterChef", "ExchangeNFT", "MdxSwapMock"]

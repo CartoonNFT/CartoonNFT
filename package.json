@@ -20,7 +20,8 @@
     "test:coverage": "cross-env NODE_OPTIONS=\"--max-old-space-size=2048\" hardhat coverage",
     "test:gas": "cross-env REPORT_GAS=true yarn test",
     "lint": "concurrently \"npm run prettier\" && solhint -c .solhint.json 'contracts/**/*.sol'",
-    "prettier": "prettier --write 'test/**/*.ts' && prettier --write 'contracts/**/*.sol' && prettier --write 'deploy/**/*.ts' && prettier --write 'tasks/**/*.js'"
+    "prettier": "prettier --write 'test/**/*.ts' && prettier --write 'contracts/**/*.sol' && prettier --write 'deploy/**/*.ts' && prettier --write 'tasks/**/*.js'",
+    "testnet:verify": "hardhat --network bsc-testnet etherscan-verify --solc-input"
   },
   "license": "MIT",
   "devDependencies": {

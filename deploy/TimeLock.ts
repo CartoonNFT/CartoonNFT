@@ -2,8 +2,8 @@ module.exports = async ({ ethers, getNamedAccounts, deployments, getChainId, get
   const { deploy } = deployments
   const { deployer, teamRewardAddress, foundationRewardAddress } = await getNamedAccounts()
 
-  // const cto = await ethers.getContract("CartoonToken")
-  const cto = await ethers.getContractAt("CartoonToken", "0x532b8a798e920f4ebee2b0c6cc400d2933971004")
+  const cto = await ethers.getContract("CartoonToken")
+  // const cto = await ethers.getContractAt("CartoonToken", "0x532b8a798e920f4ebee2b0c6cc400d2933971004")
 
   const reward = (await cto.cap()).div(10)
   const rewardPerQuarter = reward.mul(99).div(100).div(8)
