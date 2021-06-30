@@ -3,11 +3,12 @@ module.exports = async ({ ethers, network, getNamedAccounts, deployments, getCha
   const { deployer, dev } = await getNamedAccounts()
 
   const chainId = await getChainId()
-  if (chainId == "56" || (chainId == "31337" && network.config.forking)) {
-    console.log("only mainnet or testnet can deploy mocks, chainId:", chainId)
+  if (chainId == "56" || (chainId == "31337" && network.config.forking.enabled)) {
+    console.log("only no forking or testnet can deploy mocks, chainId:", chainId)
     return
   }
 
+  // deploy mocks only testnet, localnet with no forking
   let factory = await deploy("MdexFactoryMock", {
     from: deployer,
     contract: "MdexFactory",

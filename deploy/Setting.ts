@@ -7,8 +7,8 @@ module.exports = async ({ ethers, network, getNamedAccounts, deployments, getCha
   const chainId = await getChainId()
 
   let mdxFactory
-  if (chainId == "56" || (chainId == "31337" && network.config.forking)) {
-    mdxFactory = await ethers.getContractAt("IMdexFactory", MDXFactory)
+  if (chainId == "56" || (chainId == "31337" && network.config.forking.enabled)) {
+    mdxFactory = await ethers.getContractAt("contracts/interfaces/IMdexFactory.sol:IMdexFactory", MDXFactory)
   } else {
     mdxFactory = await ethers.getContract("MdexFactoryMock")
     USDT = (await ethers.getContract("tUSDT")).address
@@ -197,7 +197,7 @@ module.exports = async ({ ethers, network, getNamedAccounts, deployments, getCha
 
   for (let i = 0; i < 20; i++) {
     let identity = await cardSpec.getIdentityFromCardId(cardId[i])
-    if (await swapMarket.getSwapCardLength(identity) == 0) {
+    if ((await swapMarket.getSwapCardLength(identity)) == 0) {
       console.log("add swap market", i + 1)
       await (await swapMarket.addSwapCardList(identity, swapList[i])).wait()
     }
